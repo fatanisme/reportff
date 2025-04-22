@@ -1,4 +1,5 @@
 import { executeQuery } from "@/lib/oracle";
+import { NextResponse } from 'next/server';
 
 export async function GET(req) {
     
@@ -178,11 +179,14 @@ export async function GET(req) {
     // return fullQuery;
     const datas = await executeQuery(fullQuery,[]);
     // const datas = [kodeArea,kodeRegion,tgl_awal,tgl_akhir]
-    return Response.json({ success: true, data: datas });
+    return NextResponse.json({
+        success: true,
+        data: datas,
+      });
   } catch (error) {
-    return Response.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 500 }
+      );
   }
 }

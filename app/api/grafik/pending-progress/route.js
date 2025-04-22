@@ -4,8 +4,8 @@ export async function GET(req) {
 
   try {
     const kodeArea = req.nextUrl.searchParams.get("kode_area");
-    const kodeAreaCondition = kodeArea ? `AND BRANCH_CODE = :kode_area` : '';
-    const bindValues = kodeArea ? { kode_area: kodeArea } : {}; // Jika kode_area ada, tambahkan bind parameter
+    const kodeAreaCondition = kodeArea != 'All' ? `AND BRANCH_CODE = :kode_area` : '';
+    const bindValues = kodeArea != 'All' ? { kode_area: kodeArea } : {}; // Jika kode_area ada, tambahkan bind parameter
     const query = `
 SELECT 
     'IDE' AS CATEGORY,
