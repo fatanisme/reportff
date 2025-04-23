@@ -1,197 +1,190 @@
 import { executeQuery } from "@/lib/oracle";
 
 export async function GET(req) {
-  try {
-    const query = `
-SELECT 
-    'IDE' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%STAGE-IDE%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%STAGE-IDE%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'DEDUPE' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%DEDUPE%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%DEDUPE%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'GET RESULT IDEB' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%GET RESULT IDEB%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%GET RESULT IDEB%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'UPLOAD DOC' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%UPLOAD DOC%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%UPLOAD DOC%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'DDE' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%DDE%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%DDE%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'VERIN' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%VERIN%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%VERIN%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'OTOR VERIN' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%OTOR VERIN%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%OTOR VERIN%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'ORDER KJPP' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%ORDER KJPP%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%ORDER KJPP%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'APPRAISAL' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%APPRAISAL%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%APPRAISAL%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'OTOR APPRAISAL' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%OTOR APPRAISAL%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%OTOR APPRAISAL%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'APPROVAL' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%APPROVAL%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%APPROVAL%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'SP3' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%SP3%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%SP3%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'ORDER NOTARIS' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%ORDER NOTARIS%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%ORDER NOTARIS%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-UNION ALL
-SELECT 
-    'ORDER NOTARIS FOD' AS CATEGORY,
-    COUNT(CASE WHEN FLOW_CODE LIKE '%ORDER NOTARIS FOD%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND TRUNC(CREATE_DATE) = TRUNC(SYSDATE) 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "IN",
-    COUNT(CASE WHEN FLOW_CODE LIKE '%ORDER NOTARIS FOD%' 
-               AND FLOW_CODE NOT LIKE '%REJECT%' 
-               AND JENIS_PRODUK LIKE '%GRIYA%' 
-           THEN 1 END) AS "LAST"
-FROM ILOS.TBL_APLIKASI
-`;
-    const datas = await executeQuery(query);
+    try {
+        const kodeArea = req.nextUrl.searchParams.get("kode_area");
+        const kodeRegion = req.nextUrl.searchParams.get("kode_region");
 
-    return Response.json({ success: true, data: datas });
-  } catch (error) {
-    return Response.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
-  }
+        //real
+        // const tgll = new Date().toISOString().slice(0, 10);
+
+        // dummy
+        const tgll = '2024-05-02';
+
+        let ro_se = kodeRegion === 'All' ? 'All' : kodeRegion;
+        let ar_se = kodeArea === 'All' ? 'All' : kodeArea;
+
+        let whereArea = '';
+        if (kodeRegion && kodeRegion !== 'All') {
+            whereArea += `AND (
+        CASE
+        WHEN b.LVL = '2' THEN (
+            SELECT c.BRANCH_CODE FROM ILOS.TBL_BRANCH c WHERE c.BRANCH_CODE = b.PARENT_ID
+        )
+        WHEN b.LVL = '3' THEN (
+            SELECT c.BRANCH_CODE FROM ILOS.TBL_BRANCH c WHERE c.BRANCH_CODE = b.PARENT_ADMINISTRASI
+        )
+        ELSE ''
+        END
+        ) = '${ro_se}' `;
+        }
+
+        if (kodeArea && kodeArea !== 'All') {
+            whereArea += `AND (
+        CASE
+        WHEN b.LVL = '2' THEN b.BRANCH_CODE
+        WHEN b.LVL = '3' THEN (
+            SELECT c.BRANCH_CODE FROM ILOS.TBL_BRANCH c WHERE c.BRANCH_CODE = b.PARENT_ID
+        )
+        ELSE ''
+        END
+        ) = '${ar_se}' `;
+        }
+
+        const query = `
+SELECT
+    'IDE' AS CATEGORY,
+    (
+        SELECT COUNT(*)
+        FROM ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+        WHERE
+            a.FLOW_CODE NOT LIKE '%REJECT%'
+            AND a.FLOW_CODE LIKE '%IDE%'
+            AND a.JENIS_PRODUK LIKE '%GRIYA%'
+            AND a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+            AND a.FLOW_CODE NOT LIKE '%_HOLD%'
+            ${whereArea}
+    ) AS "LAST",
+
+    (
+        SELECT COUNT(*)
+        FROM ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+        WHERE
+            a.FLOW_CODE NOT LIKE '%REJECT%'
+            AND a.FLOW_CODE LIKE '%IDE%'
+            AND a.JENIS_PRODUK LIKE '%GRIYA%'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            AND a.FLOW_CODE NOT LIKE '%_HOLD%'
+            ${whereArea}
+    ) AS "IN"
+
+FROM DUAL
+
+UNION ALL
+
+SELECT
+    'DEDUPE' AS CATEGORY,
+    (
+        SELECT COUNT(*)
+        FROM ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+        WHERE
+            a.FLOW_CODE NOT LIKE '%REJECT%'
+            AND a.FLOW_CODE LIKE '%DEDUPE%'
+            AND a.JENIS_PRODUK LIKE '%GRIYA%'
+            AND a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+            AND a.FLOW_CODE NOT LIKE '%_HOLD%'
+            ${whereArea}
+    ) AS "LAST",
+    (
+        SELECT COUNT(*)
+        FROM ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+        WHERE
+            a.FLOW_CODE NOT LIKE '%REJECT%'
+            AND a.FLOW_CODE LIKE '%DEDUPE%'
+            AND a.JENIS_PRODUK LIKE '%GRIYA%'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            AND a.FLOW_CODE NOT LIKE '%_HOLD%'
+            ${whereArea}
+    ) AS "IN"
+
+FROM DUAL
+UNION ALL
+SELECT
+    'IDEB' AS CATEGORY,
+    (
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%BI-CHECKING%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+    (
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%BI-CHECKING%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            (SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}')
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ) ${whereArea}
+) AS "IN"
+
+FROM DUAL
+UNION ALL
+SELECT
+    'UPLOAD' AS CATEGORY,
+    (
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%UPLOAD-DOC%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+    (
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%UPLOAD-DOC%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            (SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}')
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ) ${whereArea}
+) AS "IN"
+FROM DUAL
+
+    `
+
+        const datas = await executeQuery(query);
+
+        return Response.json({ success: true, data: datas });
+    } catch (error) {
+        return Response.json(
+            { success: false, error: error.message },
+            { status: 500 }
+        );
+    }
 }

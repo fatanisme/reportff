@@ -37,14 +37,27 @@ export default function Chart({ data }) {
       series.name = name;
       series.columns.template.fill = am4core.color(color);
       series.columns.template.strokeWidth = 0;
-      series.columns.template.width = am4core.percent(50);
-
-      let labelBullet = series.bullets.push(new am4charts.LabelBullet());
-      labelBullet.label.text = "{valueY}";
-      labelBullet.label.dy = -10;
-      labelBullet.label.fontSize = 12;
-      labelBullet.label.fontWeight = "bold";
+      series.columns.template.width = am4core.percent(150);
+    
+      // Label nilai (di atas bar)
+      let valueLabel = series.bullets.push(new am4charts.LabelBullet());
+      valueLabel.label.text = "{valueY}";
+      valueLabel.label.dy = -10;
+      valueLabel.label.fill = am4core.color("#fff");
+      valueLabel.label.fontSize = 12;
+      valueLabel.label.fontWeight = "bold";
+    
+      // Label nama seri ("IN" / "LAST") di dalam atau atas bar
+      let nameLabel = series.bullets.push(new am4charts.LabelBullet());
+      nameLabel.label.text = name;
+      nameLabel.label.fill = am4core.color("#000"); // pastikan kontras
+      nameLabel.label.fontSize = 10;
+      nameLabel.label.fontWeight = "600";
+      nameLabel.locationY = 0.5; // di tengah bar
+      nameLabel.label.horizontalCenter = "middle";
+      nameLabel.label.verticalCenter = "middle";
     };
+    
 
     createSeries("IN", "IN", "#007fff");
     createSeries("LAST", "LAST", "#dc3545");

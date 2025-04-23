@@ -7,7 +7,7 @@ export async function GET(req) {
     const kodeArea = req.nextUrl.searchParams.get("kode_area");
     const kodeRegion = req.nextUrl.searchParams.get("kode_region");
 
-    //realy
+    //real
     // const tgll = new Date().toISOString().slice(0, 10);
 
     // dummy

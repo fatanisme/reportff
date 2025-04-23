@@ -1,7 +1,7 @@
 import React, { useState,useEffect } from 'react';
-import Dropdown from '../../ui/Dropdown';
-import Button from '../../ui/Button';
-import { fetchAreas, fetchRegions, fetchChartData } from '../getData';
+import Dropdown from '../ui/Dropdown';
+import Button from '../ui/Button';
+import { fetchAreas, fetchRegions, fetchChartData } from '../pending-progress/getData';
 
 export default function regionSection({
     startDate, 
