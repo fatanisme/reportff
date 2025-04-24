@@ -142,7 +142,7 @@ SELECT
 FROM DUAL
 UNION ALL
 SELECT
-    'UPLOAD' AS CATEGORY,
+    'UPLOAD_DOC' AS CATEGORY,
     (
     SELECT
         COUNT(*)
@@ -175,7 +175,616 @@ SELECT
         ) ${whereArea}
 ) AS "IN"
 FROM DUAL
+UNION ALL
+SELECT
+    'DDE' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%DDE%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (a.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%DDE%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
 
+UNION ALL
+SELECT
+    'VERIN' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-VERIFIKASI%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-VERIFIKASI%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+         ${whereArea}
+) AS "IN"
+FROM DUAL
+
+UNION ALL
+
+SELECT
+    'OTOR_VERIN' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-OTORISASI-VERIFIKASI%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-OTORISASI-VERIFIKASI%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'ORDER_KJPP' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-ORDER-KJPP%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-ORDER-KJPP%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'APPRAISAL' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-APPRAISAL%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-APPRAISAL%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'OTOR_APPRAISAL' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-OTORISASI-APPRAISAL%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-OTORISASI-APPRAISAL%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'APPROVAL' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%APPROVAL%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%APPROVAL%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'SP3' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-SP-3%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-SP-3%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'ORDER_NOTARIS' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-ORDER-NOTARIS%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-ORDER-NOTARIS%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'ORDER_NOTARIS_FOG' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-ORDER-NOTARIS-FOG%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-ORDER-NOTARIS-FOG%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'OTOR_ORDER_NOTARIS' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-OTORISASI-ORDER-NOTARIS%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-OTORISASI-ORDER-NOTARIS%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'AKAD' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-AKAD%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-AKAD%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'OTOR_AKAD' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-OTORISASI-AKAD%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%STAGE-OTORISASI-AKAD%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'REVIEW' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%REVIEW_DAN_PENCAIRAN%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (a.FLOW_CODE LIKE '%REVIEW_DAN_PENCAIRAN%')
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'REVIEW' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (
+          (a.FLOW_CODE LIKE '%STAGE-REVIEW%') OR
+          (a.FLOW_CODE LIKE '%REVIEW_DAN_PENCAIRAN%')
+          )
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (
+          (a.FLOW_CODE LIKE '%STAGE-REVIEW%') OR
+          (a.FLOW_CODE LIKE '%REVIEW_DAN_PENCAIRAN%')
+          )
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
+UNION ALL
+
+SELECT
+    'OTOR_REVIEW' AS CATEGORY,
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (
+            
+                A.FLOW_CODE LIKE '%STAGE-OTORISASI-REVIEW%'
+             OR
+             
+                A.FLOW_CODE LIKE '%STAGE_OTORISASI_REVIEW%'
+            )
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            a.NO_APLIKASI > '20190615'
+            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
+        )
+        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
+) AS "LAST",
+(
+    SELECT
+        COUNT(*)
+    FROM
+        ILOS.TBL_APLIKASI a
+        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
+    WHERE
+        (A.FLOW_CODE NOT LIKE '%REJECT%')
+        AND (
+            
+                A.FLOW_CODE LIKE '%STAGE-OTORISASI-REVIEW%'
+             OR
+             
+                A.FLOW_CODE LIKE '%STAGE_OTORISASI_REVIEW%'
+            )
+        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
+        AND (
+            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
+            )
+            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
+        ${whereArea}
+) AS "IN"
+FROM DUAL
     `
 
         const datas = await executeQuery(query);
