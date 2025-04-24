@@ -1,8 +1,8 @@
 'use client';
 
-import FilterTglSection from '@/app/components/Section/filterTglSection';
-import DataDisplaySection from '@/app/components/Section/dataDisplaySection';
-import RegionSection from '@/app/components/Section/regionSection';
+import FilterTglSection from '@/app/components/pending-progress/Section/filterTglSection';
+import DataDisplaySection from '@/app/components/pending-progress/Section/dataDisplaySection';
+import RegionSection from '@/app/components/pending-progress/Section/regionSection';
 import React, { useState } from 'react';
 
 export default function Dashboard() {

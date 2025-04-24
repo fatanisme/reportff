@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Chart from '../ui/Chart';
+import Chart from '../../ui/Chart';
 import {
     fetchCair
-} from '../pending-progress/getData';
+} from '../getData';
 
 export default function DataDisplaySection({ dataChart }) {
     const [cairs, setCairs] = useState([]);

@@ -1,8 +1,8 @@
 'use client';
 
-import FilterTglSection from '@/app/components/Section/filterTglSection';
-import DataDisplaySection from '@/app/components/Section/dataDisplaySection';
-import RegionSection from '@/app/components/Section/regionSection';
+import FilterTglSection from '@/app/components/pending-progress-griya/Section/filterTglSection';
+import DataDisplaySection from '@/app/components/pending-progress-griya/Section/dataDisplaySection';
+import RegionSection from '@/app/components/pending-progress-griya/Section/regionSection';
 import React, { useState } from 'react';
 
 export default function Dashboard() {
@@ -36,6 +36,8 @@ export default function Dashboard() {
 
         <DataDisplaySection
           dataChart={chartData}
+          region={region}
+          area={area}
         />
       </div>
     </div>

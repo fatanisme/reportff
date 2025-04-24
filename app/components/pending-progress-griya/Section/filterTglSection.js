@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
-import DateInput from '../ui/DateInput';
-import ButtonExport from '../pending-progress/ButtonExport'   
+import DateInput from '../../ui/DateInput';
+import ButtonExport from '../ButtonExport'   
 
 export default function filterTglSection({ region,area }) {
     const [startDate, setStartDate] = useState("");
