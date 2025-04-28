@@ -44,6 +44,7 @@ export async function GET(req) {
         const query = `
 SELECT
     'IDE' AS CATEGORY,
+    '#005b9c' as colorLAST,
     (
         SELECT COUNT(*)
         FROM ILOS.TBL_APLIKASI a
@@ -57,7 +58,8 @@ SELECT
             AND a.FLOW_CODE NOT LIKE '%_HOLD%'
             ${whereArea}
     ) AS "LAST",
-
+    
+    '#1197f7' as colorIN,
     (
         SELECT COUNT(*)
         FROM ILOS.TBL_APLIKASI a
@@ -72,11 +74,11 @@ SELECT
     ) AS "IN"
 
 FROM DUAL
-
 UNION ALL
 
 SELECT
     'DEDUPE' AS CATEGORY,
+    '#005b9c' as colorLAST,
     (
         SELECT COUNT(*)
         FROM ILOS.TBL_APLIKASI a
@@ -90,6 +92,8 @@ SELECT
             AND a.FLOW_CODE NOT LIKE '%_HOLD%'
             ${whereArea}
     ) AS "LAST",
+
+    '#1197f7' as colorIN,
     (
         SELECT COUNT(*)
         FROM ILOS.TBL_APLIKASI a
@@ -107,6 +111,7 @@ FROM DUAL
 UNION ALL
 SELECT
     'IDEB' AS CATEGORY,
+    '#005b9c' as colorLAST,
     (
     SELECT
         COUNT(*)
@@ -123,6 +128,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#1197f7' as colorIN,
     (
     SELECT
         COUNT(*)
@@ -143,6 +150,7 @@ FROM DUAL
 UNION ALL
 SELECT
     'UPLOAD_DOC' AS CATEGORY,
+    '#005b9c' as colorLAST,
     (
     SELECT
         COUNT(*)
@@ -159,6 +167,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#1197f7' as colorIN,
     (
     SELECT
         COUNT(*)
@@ -178,6 +188,7 @@ FROM DUAL
 UNION ALL
 SELECT
     'DDE' AS CATEGORY,
+    '#c40606' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -194,6 +205,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#ff3b3b' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -215,6 +228,7 @@ FROM DUAL
 UNION ALL
 SELECT
     'VERIN' AS CATEGORY,
+    '#c40606' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -231,6 +245,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#ff3b3b' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -253,6 +269,7 @@ UNION ALL
 
 SELECT
     'OTOR_VERIN' AS CATEGORY,
+    '#c40606' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -269,6 +286,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#ff3b3b' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -290,6 +309,7 @@ UNION ALL
 
 SELECT
     'ORDER_KJPP' AS CATEGORY,
+    '#005b9c' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -306,6 +326,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#1197f7' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -327,6 +349,7 @@ UNION ALL
 
 SELECT
     'APPRAISAL' AS CATEGORY,
+    '#005b9c' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -343,6 +366,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#1197f7' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -364,6 +389,7 @@ UNION ALL
 
 SELECT
     'OTOR_APPRAISAL' AS CATEGORY,
+    '#005b9c' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -380,6 +406,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#1197f7' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -401,6 +429,7 @@ UNION ALL
 
 SELECT
     'APPROVAL' AS CATEGORY,
+    '#005b9c' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -417,6 +446,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#1197f7' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -438,6 +469,7 @@ UNION ALL
 
 SELECT
     'SP3' AS CATEGORY,
+    '#b59a00' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -454,6 +486,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#ffd903' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -475,6 +509,7 @@ UNION ALL
 
 SELECT
     'ORDER_NOTARIS' AS CATEGORY,
+    '#b59a00' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -491,6 +526,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#ffd903' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -512,6 +549,7 @@ UNION ALL
 
 SELECT
     'ORDER_NOTARIS_FOG' AS CATEGORY,
+    '#b59a00' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -528,6 +566,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#ffd903' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -549,6 +589,7 @@ UNION ALL
 
 SELECT
     'OTOR_ORDER_NOTARIS' AS CATEGORY,
+    '#b59a00' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -565,6 +606,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#ffd903' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -586,6 +629,7 @@ UNION ALL
 
 SELECT
     'AKAD' AS CATEGORY,
+    '#005b9c' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -602,6 +646,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#1197f7' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -623,6 +669,7 @@ UNION ALL
 
 SELECT
     'OTOR_AKAD' AS CATEGORY,
+    '#005b9c' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -639,6 +686,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#1197f7' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -660,43 +709,7 @@ UNION ALL
 
 SELECT
     'REVIEW' AS CATEGORY,
-(
-    SELECT
-        COUNT(*)
-    FROM
-        ILOS.TBL_APLIKASI a
-        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
-    WHERE
-        (A.FLOW_CODE NOT LIKE '%REJECT%')
-        AND (a.FLOW_CODE LIKE '%REVIEW_DAN_PENCAIRAN%')
-        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
-        AND (
-            a.NO_APLIKASI > '20190615'
-            AND SUBSTR(a.CREATE_DATE, 1, 10) < '${tgll}'
-        )
-        AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
-) AS "LAST",
-(
-    SELECT
-        COUNT(*)
-    FROM
-        ILOS.TBL_APLIKASI a
-        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
-    WHERE
-        (A.FLOW_CODE NOT LIKE '%REJECT%')
-        AND (a.FLOW_CODE LIKE '%REVIEW_DAN_PENCAIRAN%')
-        AND (a.JENIS_PRODUK LIKE '%GRIYA%')
-        AND (
-            SUBSTR(a.CREATE_DATE, 1, 10) = '${tgll}'
-            )
-            AND (a.FLOW_CODE NOT LIKE '%_HOLD%')
-        ${whereArea}
-) AS "IN"
-FROM DUAL
-UNION ALL
-
-SELECT
-    'REVIEW' AS CATEGORY,
+    '#b59a00' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -716,6 +729,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#ffd903' as colorIN,
 (
     SELECT
         COUNT(*)
@@ -740,6 +755,7 @@ UNION ALL
 
 SELECT
     'OTOR_REVIEW' AS CATEGORY,
+    '#b59a00' as colorLAST,
 (
     SELECT
         COUNT(*)
@@ -762,6 +778,8 @@ SELECT
         )
         AND (a.FLOW_CODE NOT LIKE '%_HOLD%') ${whereArea}
 ) AS "LAST",
+
+    '#ffd903' as colorIN,
 (
     SELECT
         COUNT(*)

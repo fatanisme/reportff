@@ -30,16 +30,18 @@ export default function Chart({ data }) {
     valueAxis.renderer.minWidth = 50;
     valueAxis.max = Math.max(...data.map((d) => Math.max(d.IN, d.LAST))) * 1.1;
 
-    const createSeries = (field, name, color) => {
+    const createSeries = (field, name, colorField) => {
       let series = chart.series.push(new am4charts.ColumnSeries());
       series.dataFields.valueY = field;
       series.dataFields.categoryX = "CATEGORY";
       series.name = name;
-      series.columns.template.fill = am4core.color(color);
+      
+      // Ambil warna dari data
+      series.columns.template.propertyFields.fill = colorField;
+      series.columns.template.propertyFields.stroke = colorField;
       series.columns.template.strokeWidth = 0;
       series.columns.template.width = am4core.percent(150);
     
-      // Label nilai (di atas bar)
       let valueLabel = series.bullets.push(new am4charts.LabelBullet());
       valueLabel.label.text = "{valueY}";
       valueLabel.label.dy = -10;
@@ -47,20 +49,19 @@ export default function Chart({ data }) {
       valueLabel.label.fontSize = 12;
       valueLabel.label.fontWeight = "bold";
     
-      // Label nama seri ("IN" / "LAST") di dalam atau atas bar
       let nameLabel = series.bullets.push(new am4charts.LabelBullet());
       nameLabel.label.text = name;
-      nameLabel.label.fill = am4core.color("#000"); // pastikan kontras
+      nameLabel.label.fill = am4core.color("#000");
       nameLabel.label.fontSize = 10;
       nameLabel.label.fontWeight = "600";
-      nameLabel.locationY = 0.5; // di tengah bar
+      nameLabel.locationY = 0.5;
       nameLabel.label.horizontalCenter = "middle";
       nameLabel.label.verticalCenter = "middle";
     };
     
 
-    createSeries("IN", "IN", "#007fff");
-    createSeries("LAST", "LAST", "#dc3545");
+    createSeries("IN", "IN", "COLORIN");
+    createSeries("LAST", "LAST", "COLORLAST");
 
     chart.cursor = new am4charts.XYCursor();
     chart.cursor.behavior = "zoomX";
