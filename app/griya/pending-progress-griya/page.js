@@ -18,6 +18,14 @@ export default function Dashboard() {
         <h2 className="text-lg font-semibold mb-4">
           Dashboard Daily In Progress & Pending
         </h2>
+        <div className='mb-2'>
+          <span className="inline-block w-4 h-4 bg-[#1197f7] rounded"></span> 
+          <label className='mr-1'>Bisnis</label>
+          <span className="inline-block w-4 h-4 bg-[#ff3b3b] rounded"></span>
+          <label className='mr-1'>Risk</label>  
+          <span className="inline-block w-4 h-4 bg-[#ffd903] rounded"></span>
+          <label className='mr-1'>FOG</label>  
+        </div>
 
         <RegionSection
           startDate={startDate}
