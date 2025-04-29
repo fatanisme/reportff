@@ -5,7 +5,7 @@ import DataDisplaySection from '@/app/components/pending-progress/Section/dataDi
 import RegionSection from '@/app/components/pending-progress/Section/regionSection';
 import React, { useState } from 'react';
 
-export default function Dashboard() {
+export default function PendingProgress() {
   const [region, setRegion] = useState("All");
   const [area, setArea] = useState("All");
   const [startDate, setStartDate] = useState(null);

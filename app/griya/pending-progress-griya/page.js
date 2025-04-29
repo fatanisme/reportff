@@ -5,7 +5,7 @@ import DataDisplaySection from '@/app/components/pending-progress-griya/Section/
 import RegionSection from '@/app/components/pending-progress-griya/Section/regionSection';
 import React, { useState } from 'react';
 
-export default function Dashboard() {
+export default function PendingProgressGriya() {
   const [region, setRegion] = useState("All");
   const [area, setArea] = useState("All");
   const [startDate, setStartDate] = useState(null);
