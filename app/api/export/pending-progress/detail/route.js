@@ -1,192 +1,51 @@
 import { executeQuery } from "@/lib/oracle";
 import { NextResponse } from 'next/server';
+import oracledb from "oracledb";
 
 export async function GET(req) {
-    
-  try {
-    const kodeArea = req.nextUrl.searchParams.get("kode_area");
-    const kodeRegion = req.nextUrl.searchParams.get("kode_region");
-    const startDate = req.nextUrl.searchParams.get("startDate");
-    const endDate = req.nextUrl.searchParams.get("endDate");
 
-    const tgl_awal = startDate.replace(/-/g, '');
-    const tgl_akhir = endDate.replace(/-/g, '');
+    try {
+        const kodeArea = req.nextUrl.searchParams.get("kode_area") || 'All';
+        const kodeRegion = req.nextUrl.searchParams.get("kode_region") || 'All';
+        const startDate = req.nextUrl.searchParams.get("startDate");
+        const endDate = req.nextUrl.searchParams.get("endDate");
 
-    let wheretgl = '';
-    if (tgl_awal === tgl_akhir) {
-        wheretgl = `AND (a.NO_APLIKASI >= '${tgl_awal}')`;
-    } else {
-        wheretgl = `AND (a.NO_APLIKASI >= '${tgl_awal}' AND a.NO_APLIKASI <= '${tgl_akhir}')`;
+        const tgl_awal = startDate.replace(/-/g, '');
+        const tgl_akhir = endDate.replace(/-/g, '');
+
+        let ro_se = kodeRegion == 'All' ? 'All' : kodeRegion;
+        let ar_se = kodeArea == 'All' ? 'All' : kodeArea;
+
+        const query = `
+            BEGIN
+            pending_progress_detail(
+                :p_tglawal,
+                :p_tglakhir,
+                :p_kode_region,
+                :p_kode_area,
+                :p_cursor
+            );
+            END;
+        `;
+
+        const binds = {
+            p_tglawal: tgl_awal,
+            p_tglakhir: tgl_akhir,
+            p_kode_region: ro_se,
+            p_kode_area: ar_se,
+            p_cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR }
+        };
+
+        const datas = await executeQuery(query, binds);
+        // const datas = [kodeArea,kodeRegion,tgl_awal,tgl_akhir]
+        return NextResponse.json({
+            success: true,
+            data: datas,
+        });
+    } catch (error) {
+        return NextResponse.json(
+            { success: false, error: error.message },
+            { status: 500 }
+        );
     }
-
-    // Dummy kode region/area, nanti diganti dari DB jika mau dinamis
-    let ro_se = kodeRegion == 'All' ? 'All' : kodeRegion;
-    let ar_se = kodeArea == 'All' ? 'All' : kodeArea;
-
-    let whereArea = '';
-    if (kodeRegion && kodeRegion !== 'All') {
-        whereArea += `AND (
-        CASE
-            WHEN b.LVL = '2' THEN (SELECT c.BRANCH_CODE FROM ILOS.TBL_BRANCH c WHERE c.BRANCH_CODE = b.PARENT_ID)
-            WHEN b.LVL = '3' THEN (SELECT c.BRANCH_CODE FROM ILOS.TBL_BRANCH c WHERE c.BRANCH_CODE = b.PARENT_ADMINISTRASI)
-            ELSE ''
-        END
-        ) = '${ro_se}'`;
-    }
-
-    if (kodeArea && kodeArea !== 'All') {
-        whereArea += ` AND (
-        CASE
-            WHEN b.LVL = '2' THEN b.BRANCH_CODE
-            WHEN b.LVL = '3' THEN (SELECT c.BRANCH_CODE FROM ILOS.TBL_BRANCH c WHERE c.BRANCH_CODE = b.PARENT_ID)
-            ELSE ''
-        END
-        ) = '${ar_se}'`;
-    }
-
-    const whereBase = `(a.JENIS_PRODUK LIKE '%MITRAGUNA%' OR a.JENIS_PRODUK LIKE '%PENSIUN%')
-        AND (a.FLOW_CODE NOT LIKE '%_HOLD%')`;
-
-    const fullQuery = `
-        SELECT
-        TO_CHAR((
-            SELECT h.CREATE_DATE
-            FROM ILOS.TBL_APLIKASI_HIST h
-            WHERE h.NO_APLIKASI = a.NO_APLIKASI
-            AND h.FLOW_CODE LIKE '%STAGE-IDE%'
-            ORDER BY h.CREATE_DATE DESC
-            FETCH FIRST 1 ROWS ONLY
-        ), 'yyyy-mm-dd') AS TGL_INPUT,
-
-        a.NO_APLIKASI,
-
-        REPLACE(REPLACE(a.NAMA_CUSTOMER, '{value=', ''), ', storeType=java.lang.String}', '') AS NAMA_NASABAH,
-        REPLACE(REPLACE(a.JENIS_PRODUK, '{value=', ''), ', storeType=java.lang.String}', '') AS JENIS_PRODUK,
-
-        CASE
-            WHEN a.JENIS_PRODUK LIKE '%PENSIUN%' THEN (
-            SELECT c.EVENT_NO || ' - ' || c.EVENT_NAME
-            FROM ILOS.TBL_EVENT_PENSIUN c
-            WHERE c.EVENT_NO = ILOS.f_get_value_clob(a.DATA, 'kodeProgram')
-            )
-            WHEN a.JENIS_PRODUK LIKE '%MITRAGUNA%' THEN (
-            SELECT c.EVENT_NO || ' - '  || c.EVENT_NAME
-            FROM ILOS.TBL_EVENT_IMPLAN c
-            WHERE c.EVENT_NO = ILOS.f_get_value_clob(a.DATA, 'kodeProgram')
-            )
-            WHEN a.JENIS_PRODUK LIKE '%GRIYA%' THEN (
-            SELECT c.EVENT_NO || ' - ' || c.EVENT_NAME
-            FROM ILOS.TBL_EVENT c
-            WHERE c.EVENT_NO = ILOS.f_get_value_clob(a.DATA, 'kodeProgram')
-            )
-        END AS EVENT,
-
-        TO_NUMBER(ILOS.f_get_value_clob(a.DATA, 'jumlahPengajuan')) AS PLAFOND,
-
-        b.BRANCH_CODE || ' - ' || b.NAME AS NAMA_CABANG,
-
-        CASE
-            WHEN b.LVL = '2' THEN b.BRANCH_CODE || ' - ' || b.NAME
-            WHEN b.LVL = '3' THEN (
-            SELECT c.BRANCH_CODE || ' - ' || c.NAME
-            FROM ILOS.TBL_BRANCH c
-            WHERE c.BRANCH_CODE = b.PARENT_ID
-            )
-            ELSE ''
-        END AS NAMA_AREA,
-
-        CASE
-            WHEN b.LVL = '2' THEN (
-            SELECT c.BRANCH_CODE || ' - ' || c.NAME
-            FROM ILOS.TBL_BRANCH c
-            WHERE c.BRANCH_CODE = b.PARENT_ID
-            )
-            WHEN b.LVL = '3' THEN (
-            SELECT c.BRANCH_CODE || ' - ' || c.NAME
-            FROM ILOS.TBL_BRANCH c
-            WHERE c.BRANCH_CODE = b.PARENT_ADMINISTRASI
-            )
-            ELSE ''
-        END AS REGION,
-
-        CASE
-            WHEN a.FLOW_CODE LIKE '%REJECT%' THEN
-            CASE
-                WHEN (
-                SELECT COUNT(*)
-                FROM ILOS.TBL_CANCEL_APLIKASI c
-                WHERE c.NO_APLIKASI = a.NO_APLIKASI
-                ) > 0 THEN '88 - CANCEL'
-                ELSE '99 - REJECT'
-            END
-            ELSE
-            CASE
-                WHEN a.FLOW_CODE LIKE '%IDE%' THEN '10 - IDE'
-                WHEN a.FLOW_CODE LIKE '%DEDUPE%' THEN '11 - DEDUPE'
-                WHEN a.FLOW_CODE LIKE '%BI-CHECKING%' THEN '12 - iDEB'
-                WHEN a.FLOW_CODE LIKE '%UPLOAD-DOC%' THEN '13 - UPLOAD DOC'
-                WHEN a.FLOW_CODE LIKE '%DDE%' THEN '14 - DDE'
-                WHEN a.FLOW_CODE LIKE 'STAGE-VERIN%' THEN '15 - VERIN'
-                WHEN a.FLOW_CODE LIKE 'STAGE-OTORISASI-VERIN%' THEN '151 - OTOR VERIN'
-                WHEN a.FLOW_CODE LIKE '%APPROVAL%' THEN '16 - APPROVAL'
-                WHEN a.FLOW_CODE LIKE '%SP3%' THEN '17 - SP3'
-                WHEN a.FLOW_CODE LIKE '%ORDER-AKAD%' THEN '17 - SP3'
-                WHEN a.FLOW_CODE LIKE '%REVIEW-AKAD%' THEN '17 - SP3'
-                WHEN a.FLOW_CODE LIKE 'STAGE-AKAD-DAN-PENCAIRAN%' THEN '18 - AKAD'
-                WHEN a.FLOW_CODE LIKE 'STAGE-OTORISASI-AKAD-DAN-PENCAIRAN%' THEN '181 - OTOR AKAD'
-                WHEN a.FLOW_CODE LIKE 'STAGE-REVIEW-DAN-PENCAIRAN%' THEN '19 - REVIEW'
-                WHEN a.FLOW_CODE LIKE 'STAGE-OTORISASI-REVIEW-DAN-PENCAIRAN%' THEN '191 - OTOR REVIEW'
-                WHEN a.FLOW_CODE LIKE '%LIVE%' THEN '20 - LIVE'
-                ELSE REPLACE(REPLACE(REPLACE(REPLACE(a.FLOW_CODE, 'STAGE-', ''), '-PENSIUN', ''), '-IMPLAN', ''), '-', ' ')
-            END
-        END AS LAST_POSISI,
-
-        a.CREATE_BY AS LAST_READ_BY,
-        usr.NAME AS LAST_READ_BY_NAME,
-        TO_CHAR(a.CREATE_DATE, 'yyyy-mm-dd HH24:MI:SS') AS LAST_UPDATE,
-
-        CASE
-            WHEN (
-            SELECT COUNT(*)
-            FROM ILOS.TBL_APLIKASI_HIST h
-            WHERE h.NO_APLIKASI = a.NO_APLIKASI
-                AND h.FLOW_CODE LIKE 'STAGE-UPLOAD-DOC-%'
-            ) = 0 THEN 0
-            ELSE (
-            SELECT COUNT(*)
-            FROM ILOS.TBL_APLIKASI_HIST h
-            WHERE h.NO_APLIKASI = a.NO_APLIKASI
-                AND h.FLOW_CODE LIKE 'STAGE-UPLOAD-DOC-%'
-            ) - 1
-        END AS JUM_RETURN,
-
-        (
-            SELECT us.BRANCH_CODE
-            FROM ILOS.TBL_APLIKASI_HIST h
-            INNER JOIN ILOS.TBL_USER us ON us.USER_ID = h.UPDATE_BY
-            WHERE h.NO_APLIKASI = a.NO_APLIKASI
-            AND h.FLOW_CODE LIKE '%STAGE-DDE%'
-            ORDER BY h.CREATE_DATE DESC
-            FETCH FIRST 1 ROWS ONLY
-        ) AS BRANCH_DDE
-
-        FROM ILOS.TBL_APLIKASI a
-        INNER JOIN ILOS.TBL_BRANCH b ON b.BRANCH_CODE = a.BRANCH_CODE
-        INNER JOIN ILOS.TBL_USER usr ON usr.USER_ID = a.CREATE_BY
-        WHERE ${whereBase}${wheretgl}${whereArea}
-    `;
-
-    // return fullQuery;
-    const datas = await executeQuery(fullQuery,[]);
-    // const datas = [kodeArea,kodeRegion,tgl_awal,tgl_akhir]
-    return NextResponse.json({
-        success: true,
-        data: datas,
-      });
-  } catch (error) {
-    return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 }
-      );
-  }
 }
