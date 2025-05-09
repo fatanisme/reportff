@@ -8,29 +8,18 @@ const buildQuery = (params = {}) => {
     return query.toString();
 };
 
-export const fetchCair = async () => {
+export const fetchChartData = async () => {
     try {
-        const { data } = await axios.get(`/grafik/pending-progress-2`);
+        const { data } = await axios.get(`/dashboard/grafik`);
         if (data.success) return data.data;
     } catch (error) {
         console.error("Error fetching chart data:", error);
     }
 };
 
-export const fetchChartData = async ({ area }) => {
+export const fetchExcelData = async () => {
     try {
-        const query = buildQuery({ kode_area: area });
-        const { data } = await axios.get(`/grafik/pending-progress?${query}`);
-        if (data.success) return data.data;
-    } catch (error) {
-        console.error("Error fetching chart data:", error);
-    }
-};
-
-export const fetchExcelDetail = async ({ startDate, endDate, region, area }) => {
-    try {
-        const query = buildQuery({ startDate, endDate, kode_region: region, kode_area: area });
-        const { data } = await axios.get(`/export/pending-progress/detail?${query}`);
+        const { data } = await axios.get(`/export/dashbord`,{ timeout: 600000});
         if (data.success) return data.data;
     } catch (error) {
         console.error("Error fetching detail Excel data:", error);

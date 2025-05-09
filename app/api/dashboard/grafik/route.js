@@ -1,0 +1,27 @@
+import { executeQuery } from "@/lib/oracle";
+import oracledb from "oracledb";
+
+export async function GET(req) {
+  try {
+    const query = `
+        BEGIN
+        dashboard_daily_grafik(
+            :p_cursor
+        );
+        END;
+    `;
+
+    const binds = {
+      p_cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR }
+    };
+
+    const datas = await executeQuery(query, binds);
+
+    return Response.json({ success: true, data: datas });
+  } catch (error) {
+    return Response.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}

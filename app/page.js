@@ -10,7 +10,6 @@ import {} from "./components/dashboardDaily/getData";
 am4core.useTheme(am4themes_animated.default);
 
 const PendingProgressGriya = () => {
-  const [chartData, setChartData] = useState([]);
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
@@ -32,7 +31,6 @@ const PendingProgressGriya = () => {
         </div>
 
         <DataDisplaySection
-          dataChart={chartData}
         />
 
       </div>
