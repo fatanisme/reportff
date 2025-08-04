@@ -16,7 +16,7 @@ const AkumulasiRealtime = () => {
         <div className="p-2 bg-gray-100 min-h-screen">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold mb-1">
-              Dashboard Daily In Progress & Pending
+              Dashboard Akumulasi Realtime
             </h2>
             <div className='mb-2'>
               <span className="inline-block w-4 h-4 bg-[#1197f7] rounded"></span> 
