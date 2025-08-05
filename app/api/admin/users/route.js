@@ -1,15 +1,19 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { executeQuery } from "@/lib/oracle"; // Pastikan file koneksi sudah tersedia
 
 export async function GET(req) {
-    const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "admin") {
-        return Response.json({ error: "Unauthorized" }, { status: 403 });
-    }
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "admin") {
+    return Response.json({ error: "Unauthorized" }, { status: 403 });
+  }
 
-    const users = await prisma.user.findMany();
+  try {
+    const query = `SELECT ID, NAME, EMAIL, ROLE, CREATED_AT FROM USERS ORDER BY CREATED_AT DESC`;
+    const users = await executeQuery(query);
     return Response.json(users);
+  } catch (err) {
+    console.error("Gagal ambil data users:", err);
+    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }

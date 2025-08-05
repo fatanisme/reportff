@@ -60,12 +60,6 @@ export default function LoginPage() {
                     Login
                 </button>
             </form>
-            <p className="text-center text-sm mt-4">
-                Belum punya akun?{" "}
-                <a href="/auth/register" className="text-blue-600 hover:underline">
-                    Daftar
-                </a>
-            </p>
         </div>
     );
 }

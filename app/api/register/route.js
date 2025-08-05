@@ -1,32 +1,48 @@
-import { PrismaClient } from "@prisma/client";
+// File: app/api/register/route.js
+import { NextResponse } from "next/server";
+import { executeQuery } from "@/lib/oracle";
 import bcrypt from "bcryptjs";
-import { z } from "zod";
-
-const prisma = new PrismaClient();
-
-const registerSchema = z.object({
-    name: z.string().min(2, "Nama minimal 2 karakter"),
-    email: z.string().email("Format email tidak valid"),
-    password: z.string().min(6, "Password minimal 6 karakter"),
-});
 
 export async function POST(req) {
-    const body = await req.json();
-    const validatedData = registerSchema.safeParse(body);
+  const { name, email, password } = await req.json();
 
-    if (!validatedData.success) {
-        return Response.json({ error: validatedData.error.format() }, { status: 400 });
+  try {
+    const existingUser = await executeQuery(
+      "SELECT * FROM REPORTFF.USERS WHERE EMAIL = :email",
+      { email }
+    );
+
+    if (existingUser.length > 0) {
+      return NextResponse.json(
+        { error: "Email sudah terdaftar" },
+        { status: 400 }
+      );
     }
 
-    const { name, email, password } = validatedData.data;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    try {
-        const newUser = await prisma.user.create({
-            data: { name, email, password: hashedPassword, role: "user" },
-        });
-        return Response.json(newUser);
-    } catch (error) {
-        return Response.json({ error: "Email sudah terdaftar" }, { status: 400 });
-    }
+    await executeQuery(
+      `INSERT INTO REPORTFF.USERS (NAME, EMAIL, PASSWORD) VALUES (:name, :email, :password)`,
+      {
+        name,
+        email,
+        password: hashedPassword,
+      }
+    );
+    console.log("Insert binds:", {
+      name,
+      email,
+      password: hashedPassword,
+    });
+    return NextResponse.json(
+      { message: "Registrasi berhasil" },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Error register:", error);
+    return NextResponse.json(
+      { error: "Terjadi kesalahan server" },
+      { status: 500 }
+    );
+  }
 }

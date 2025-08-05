@@ -1,46 +1,52 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { executeQuery } from "@/lib/oracle"; // Sesuaikan dengan file koneksi Oracle kamu
 
 export const authOptions = {
-    providers: [
-        CredentialsProvider({
-            name: "Credentials",
-            credentials: {
-                email: { label: "Email", type: "text" },
-                password: { label: "Password", type: "password" },
-            },
-            async authorize(credentials) {
-                const user = await prisma.user.findUnique({
-                    where: { email: credentials.email },
-                });
-                if (!user) throw new Error("User not found");
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const query = `SELECT * FROM REPORTFF.USERS WHERE EMAIL = :email`;
+        const result = await executeQuery(query, { email: credentials.email });
 
-                const isValid = await bcrypt.compare(credentials.password, user.password);
-                if (!isValid) throw new Error("Invalid credentials");
+        const user = result[0];
+        if (!user) throw new Error("User tidak ditemukan");
 
-                return { id: user.id, name: user.name, email: user.email, role: user.role };
-            },
-        }),
-    ],
-    callbacks: {
-        async session({ session, token }) {
-            session.user.role = token.role;
-            return session;
-        },
-        async jwt({ token, user }) {
-            if (user) token.role = user.role;
-            return token;
-        },
+        const valid = await bcrypt.compare(credentials.password, user.PASSWORD);
+        if (!valid) throw new Error("Password salah");
+
+        return {
+          id: user.ID,
+          name: user.NAME,
+          email: user.EMAIL,
+          role: user.ROLE,
+        };
+      },
+    }),
+  ],
+  callbacks: {
+    async session({ session, token }) {
+      session.user.role = token.role;
+      return session;
     },
-    session: {
-        strategy: "jwt",
-        maxAge: 60 * 60 * 24, // 1 hari
+    async jwt({ token, user }) {
+      if (user) token.role = user.role;
+      return token;
     },
-    pages: { signIn: "/auth/login" },
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 24,
+  },
+  pages: {
+    signIn: "/auth/login",
+  },
 };
 
 const handler = NextAuth(authOptions);
