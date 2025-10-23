@@ -10,12 +10,12 @@ export async function GET(req) {
         const p_no_apl = req.nextUrl.searchParams.get("no_apl") ;
         const query1 = `
             BEGIN
-            inquiry_aplikasi(:no_apl, :p_cursor);
+            ILOS.inquiry_aplikasi(:no_apl, :p_cursor);
             END;
         `;
         const query2 = `
             BEGIN
-            inquiry_aplikasi_memo(:no_apl, :p_cursor);
+            ILOS.inquiry_aplikasi_memo(:no_apl, :p_cursor);
             END;
         `;
         const binds = {

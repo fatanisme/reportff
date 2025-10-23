@@ -7,10 +7,14 @@ export default function CreateDivisiPage() {
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
 
+  const handleBack = () => {
+    window.location.href = "/administrator/divisi";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await fetch("http://localhost:3000/api/divisi", {
+      await fetch("/api/divisi", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, name, description }),
@@ -58,12 +62,21 @@ export default function CreateDivisiPage() {
             />
           </div>
 
-          <button
-            type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Simpan
-          </button>
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              Kembali
+            </button>
+            <button
+              type="submit"
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Simpan
+            </button>
+          </div>
         </form>
       </div>
     </div>

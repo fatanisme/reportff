@@ -17,15 +17,38 @@ export const fetchChartData = async () => {
     }
 };
 
-export const fetchExcelExport = async ({ startDate, endDate}) => {
+export const fetchExcelExport = async ({ startDate, endDate }) => {
     try {
-        const query = buildQuery({ startDate, endDate});
-        const { data } = await axios.get(`grafik/akumulasi-realtime/export/?${query}`);
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+        const params = {};
+
+        if (startDate) {
+            if (!dateRegex.test(startDate)) {
+                console.error("startDate must be in YYYY-MM-DD format");
+                throw new Error("startDate must be in YYYY-MM-DD format");
+            }
+            params.startDate = startDate;
+        }
+
+        if (endDate) {
+            if (!dateRegex.test(endDate)) {
+                console.error("endDate must be in YYYY-MM-DD format");
+                throw new Error("endDate must be in YYYY-MM-DD format");
+            }
+            params.endDate = endDate;
+        }
+
+        const query = buildQuery(params);
+        const endpoint = query
+            ? `grafik/akumulasi-realtime/export?${query}`
+            : `grafik/akumulasi-realtime/export`;
+
+        const { data } = await axios.get(endpoint);
         if (data.success) return data.data;
+        return null;
     } catch (error) {
         console.error("Error fetching detail Excel data:", error);
+        throw error; // Re-throw to be handled by calling function
     }
 };
-
-
-

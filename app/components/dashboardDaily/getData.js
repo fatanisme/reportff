@@ -19,10 +19,17 @@ export const fetchChartData = async () => {
 
 export const fetchExcelData = async () => {
     try {
-        const { data } = await axios.get(`/export/dashbord`,{ timeout: 600000});
-        if (data.success) return data.data;
+        const { data } = await axios.get(`/export/dashbord`, { timeout: 600000 });
+        if (data.success) {
+            return {
+                rows: data.data || [],
+                meta: data.meta || null,
+            };
+        }
+        return { rows: [], meta: null };
     } catch (error) {
         console.error("Error fetching detail Excel data:", error);
+        return { rows: [], meta: null };
     }
 };
 

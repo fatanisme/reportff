@@ -4,12 +4,17 @@ import { executeQuery } from "@/lib/oracle"; // Pastikan file koneksi sudah ters
 
 export async function GET(req) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "admin") {
+  const divisionCode =
+    session?.user?.divisionCodeNormalized ??
+    session?.user?.divisionCode?.toString().toLowerCase() ??
+    "";
+
+  if (!session || divisionCode !== "admin") {
     return Response.json({ error: "Unauthorized" }, { status: 403 });
   }
 
   try {
-    const query = `SELECT ID, NAME, EMAIL, ROLE, CREATED_AT FROM USERS ORDER BY CREATED_AT DESC`;
+    const query = `SELECT ID, NAME, EMAIL, ID_DIVISI, CREATED_AT FROM USERS ORDER BY CREATED_AT DESC`;
     const users = await executeQuery(query);
     return Response.json(users);
   } catch (err) {

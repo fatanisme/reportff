@@ -5,7 +5,7 @@ export async function GET(req) {
   try {
     const query = `
         BEGIN
-        pending_progress_cair(
+        ILOS.pending_progress_cair(
             :p_cursor
         );
         END;

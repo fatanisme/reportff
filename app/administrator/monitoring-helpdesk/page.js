@@ -1,173 +1,203 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import * as am4core from "@amcharts/amcharts4/core";
-import * as am4charts from "@amcharts/amcharts4/charts";
-import * as am4themes_animated from "@amcharts/amcharts4/themes/animated";
-import * as XLSX from "xlsx"; // Import XLSX
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-am4core.useTheme(am4themes_animated.default);
+const itemsPerPage = 10;
 
-const PendingProgress = () => {
-    const chartRef = useRef(null);
-    const [region, setRegion] = useState("All");
-    const [area, setArea] = useState("All");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-    const [chartData, setChartData] = useState([]); // State untuk menyimpan data chart
-    const [isButtonClicked, setIsButtonClicked] = useState(false); // New state to track button click
+const MonitoringHelpdesk = () => {
+  const [records, setRecords] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: "DATE", direction: "desc" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    // Function to fetch data when the "Tampilkan" button is clicked
-    const fetchData = async () => {
-        try {
-            let url = "http://localhost:3000/api/pending-progress?";
-            if (region !== "All") url += `region=${region}&`;
-            if (area !== "All") url += `area=${area}&`;
-            if (startDate) url += `startDate=${startDate}&`;
-            if (endDate) url += `endDate=${endDate}`;
+  const fetchRecords = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/helpdesk-history");
+      if (!response.ok) {
+        throw new Error("Gagal mengambil data history");
+      }
+      const payload = await response.json();
+      const data = Array.isArray(payload.data) ? payload.data : [];
+      setRecords(data);
+    } catch (err) {
+      console.error("Error fetch helpdesk history:", err);
+      setError(err.message || "Terjadi kesalahan saat mengambil data");
+      setRecords([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-            const response = await fetch(url);
-            const result = await response.json();
-            if (result.success) {
-                setChartData(result.data); // Update chartData with fetched data
-            }
-        } catch (error) {
-            console.error("Error fetching data: ", error);
-        }
-    };
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
 
-    useEffect(() => {
-        // Create chart after data is fetched
-        if (chartData.length === 0) return; // Don't create chart if no data
+  const normalizedRecords = useMemo(() => {
+    return records.map((record) => ({
+      APPLICATION_NO: record.NO_APP ?? "",
+      DESCRIPTION: record.ACTION_DESC ?? "",
+      USER: record.ACTION_BY ?? "",
+      IP_ADDRESS: record.IP_ADDRESS ?? "",
+      DATE: record.ACTION_DATE ?? "",
+    }));
+  }, [records]);
 
-        let chart = am4core.create("chartdiv", am4charts.XYChart);
-        chartRef.current = chart;
-        chart.paddingRight = 20;
-        chart.data = chartData; // Use fetched data for the chart
+  const filteredAndSortedRecords = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    const filtered = normalizedRecords.filter((record) => {
+      if (!term) return true;
+      return (
+        record.APPLICATION_NO.toLowerCase().includes(term) ||
+        record.DESCRIPTION.toLowerCase().includes(term) ||
+        record.USER.toLowerCase().includes(term) ||
+        record.IP_ADDRESS.toLowerCase().includes(term) ||
+        record.DATE.toLowerCase().includes(term)
+      );
+    });
 
-        let categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
-        categoryAxis.dataFields.category = "category";
-        categoryAxis.renderer.grid.template.location = 0;
-        categoryAxis.renderer.minGridDistance = 20;
-        categoryAxis.renderer.labels.template.rotation = -45;
-        categoryAxis.renderer.cellStartLocation = 0.2;
-        categoryAxis.renderer.cellEndLocation = 0.8;
+    if (!sortConfig.key) {
+      return filtered;
+    }
 
-        let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-        valueAxis.renderer.labels.template.fontSize = 12;
-        valueAxis.renderer.minWidth = 50;
+    const sorted = [...filtered].sort((a, b) => {
+      const aRaw = a[sortConfig.key] ?? "";
+      const bRaw = b[sortConfig.key] ?? "";
+      const aVal = aRaw.toString().toLowerCase();
+      const bVal = bRaw.toString().toLowerCase();
 
-        // Set a max value for the valueAxis to avoid cut-off values
-        valueAxis.max = Math.max(...chart.data.map(d => Math.max(d.IN, d.LAST))) * 1.1;
+      if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
 
-        const createSeries = (field, name, color) => {
-            let series = chart.series.push(new am4charts.ColumnSeries());
-            series.dataFields.valueY = field;
-            series.dataFields.categoryX = "category";
-            series.name = name;
-            series.columns.template.fill = color;
-            series.columns.template.strokeWidth = 0;
-            series.columns.template.width = am4core.percent(50);
+    return sorted;
+  }, [normalizedRecords, searchTerm, sortConfig]);
 
-            let labelBullet = series.bullets.push(new am4charts.LabelBullet());
-            labelBullet.label.text = "{valueY}";
-            labelBullet.label.dy = -10;
-            labelBullet.label.fontSize = 12;
-            labelBullet.label.fontWeight = "bold";
-            labelBullet.label.truncate = false;
-            labelBullet.label.wrap = false;
-            labelBullet.label.hideOversized = false;
+  const totalPages = Math.ceil(filteredAndSortedRecords.length / itemsPerPage);
+  const effectivePage = totalPages === 0 ? 0 : Math.min(currentPage, totalPages);
+  const startIndex = totalPages === 0 ? 0 : (effectivePage - 1) * itemsPerPage;
+  const paginatedRecords = filteredAndSortedRecords.slice(
+    startIndex,
+    totalPages === 0 ? 0 : startIndex + itemsPerPage
+  );
 
-            // Enable zoom functionality
-            chart.cursor = new am4charts.XYCursor();
-            chart.cursor.behavior = "zoomX";
-        };
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
 
-        createSeries("IN", "IN", am4core.color("#007fff"));
-        createSeries("LAST", "LAST", am4core.color("#dc3545"));
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return "⇅";
+    return sortConfig.direction === "asc" ? "🔼" : "🔽";
+  };
 
-        return () => {
-            chart.dispose();
-        };
-    }, [chartData]); // Re-render chart whenever chartData changes
-
-    // Call fetchData only when the "Tampilkan" button is clicked
-    const handleButtonClick = () => {
-        setIsButtonClicked(true);
-        fetchData();
-    };
-
-    // Function to export chart data as Excel
-    const exportToExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(chartData); // Convert data to worksheet
-        const wb = XLSX.utils.book_new(); // Create a new workbook
-        XLSX.utils.book_append_sheet(wb, ws, "Pending Data"); // Append worksheet to workbook
-        XLSX.writeFile(wb, "Pending_Progress_Data.xlsx"); // Write file as Excel
-    };
-
-    return (
-        <div className="p-6 bg-gray-100 min-h-screen">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-semibold mb-4">Dashboard Daily In Progress & Pending</h2>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-end">
-                    <div>
-                        <label className="block text-sm font-medium">Pilih Region</label>
-                        <select className="w-full p-2 border rounded" value={region} onChange={(e) => setRegion(e.target.value)}>
-                            <option>All</option>
-                            <option>Region 1</option>
-                            <option>Region 2</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Pilih Area</label>
-                        <select className="w-full p-2 border rounded" value={area} onChange={(e) => setArea(e.target.value)}>
-                            <option>All</option>
-                            <option>Area 1</option>
-                            <option>Area 2</option>
-                        </select>
-                    </div>
-                    <button
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                        onClick={handleButtonClick} // Trigger data fetching on button click
-                    >
-                        Tampilkan
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 items-end">
-                    <div>
-                        <label className="block text-sm font-medium">Mulai Dari</label>
-                        <input type="date" className="w-full p-2 border rounded" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Sampai Dengan</label>
-                        <input type="date" className="w-full p-2 border rounded" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                    </div>
-                    <button
-                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                        onClick={exportToExcel} // Trigger export to Excel
-                    >
-                        Download Data WISE
-                    </button>
-                </div>
-
-                <div className="w-full">
-                    <div id="chartdiv" className="w-full h-96"></div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mt-6">
-                    <div className="p-4 bg-green-300 rounded text-center">Cair (Hari ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-green-600 rounded text-center">Cair (Bulan ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-red-100 rounded text-center">Cancel (Hari ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-red-300 rounded text-center">Cancel (Bulan ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-red-400 rounded text-center">Reject (Hari ini): <span className="font-semibold">429</span></div>
-                    <div className="p-4 bg-red-600 rounded text-center">Reject (Bulan ini): <span className="font-semibold">39</span></div>
-                    <div className="p-4 bg-gray-300 rounded text-center">Hold (Bulan ini): <span className="font-semibold">55</span></div>
-                </div>
-            </div>
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="rounded-lg bg-white p-6 shadow-md">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Monitoring Helpdesk</h2>
+          <button
+            type="button"
+            onClick={fetchRecords}
+            className="rounded bg-blue-500 px-3 py-2 text-sm text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-blue-300"
+            disabled={loading}
+          >
+            {loading ? "Memuat..." : "Refresh"}
+          </button>
         </div>
-    );
+
+        <input
+          type="text"
+          placeholder="Cari data..."
+          className="mb-4 w-full rounded border p-2"
+          value={searchTerm}
+          onChange={(event) => {
+            setSearchTerm(event.target.value);
+            setCurrentPage(1);
+          }}
+        />
+
+        {error && (
+          <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto border border-gray-300 text-sm">
+            <thead className="bg-gray-200">
+              <tr>
+                {[
+                  { key: "APPLICATION_NO", label: "No Aplikasi" },
+                  { key: "DESCRIPTION", label: "Deskripsi" },
+                  { key: "USER", label: "User" },
+                  { key: "IP_ADDRESS", label: "IP Address" },
+                  { key: "DATE", label: "Tanggal" },
+                ].map((column) => (
+                  <th
+                    key={column.key}
+                    className="select-none border px-4 py-2"
+                    onClick={() => handleSort(column.key)}
+                  >
+                    <div className="flex items-center justify-between">
+                      {column.label}
+                      <span className="ml-2">{renderSortIcon(column.key)}</span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedRecords.map((record, index) => (
+                <tr key={`${record.APPLICATION_NO}-${index}`}>
+                  <td className="border px-4 py-2">{record.APPLICATION_NO || "-"}</td>
+                  <td className="border px-4 py-2">{record.DESCRIPTION || "-"}</td>
+                  <td className="border px-4 py-2">{record.USER || "-"}</td>
+                  <td className="border px-4 py-2">{record.IP_ADDRESS || "-"}</td>
+                  <td className="border px-4 py-2">{record.DATE || "-"}</td>
+                </tr>
+              ))}
+              {paginatedRecords.length === 0 && !loading && (
+                <tr>
+                  <td colSpan={5} className="py-4 text-center text-gray-500">
+                    Data tidak ditemukan
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span>
+            Halaman {effectivePage} dari {totalPages}
+          </span>
+          <div className="flex space-x-2">
+            <button
+              disabled={effectivePage <= 1}
+              className="rounded bg-gray-300 px-3 py-1 disabled:opacity-50"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            >
+              ⬅️ Prev
+            </button>
+            <button
+              disabled={totalPages === 0 || effectivePage >= totalPages}
+              className="rounded bg-gray-300 px-3 py-1 disabled:opacity-50"
+              onClick={() => setCurrentPage((prev) => (totalPages === 0 ? 1 : Math.min(totalPages, prev + 1)))}
+            >
+              Next ➡️
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export default PendingProgress;
+export default MonitoringHelpdesk;

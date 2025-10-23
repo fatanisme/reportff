@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import FilterTglSection from '@/app/components/pending-progress/Section/filterTglSection';
-import DataDisplaySection from '@/app/components/pending-progress/Section/dataDisplaySection';
-import RegionSection from '@/app/components/pending-progress/Section/regionSection';
-import React, { useState } from 'react';
+import FilterTglSection from "@/app/components/pending-progress/Section/filterTglSection";
+import DataDisplaySection from "@/app/components/pending-progress/Section/dataDisplaySection";
+import RegionSection from "@/app/components/pending-progress/Section/regionSection";
+import React, { useState } from "react";
 
 export default function PendingProgress() {
   const [region, setRegion] = useState("All");
@@ -11,6 +11,7 @@ export default function PendingProgress() {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [chartData, setChartData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <div className="p-2 bg-gray-100 min-h-screen">
@@ -18,13 +19,13 @@ export default function PendingProgress() {
         <h2 className="text-lg font-semibold mb-1">
           Dashboard Daily In Progress & Pending
         </h2>
-        <div className='mb-2'>
-          <span className="inline-block w-4 h-4 bg-[#1197f7] rounded"></span> 
-          <label className='mr-1'>Bisnis</label>
+        <div className="mb-2">
+          <span className="inline-block w-4 h-4 bg-[#1197f7] rounded"></span>
+          <label className="mr-1">Bisnis</label>
           <span className="inline-block w-4 h-4 bg-[#ff3b3b] rounded"></span>
-          <label className='mr-1'>Risk</label>  
+          <label className="mr-1">Risk</label>
           <span className="inline-block w-4 h-4 bg-[#ffd903] rounded"></span>
-          <label className='mr-1'>FOG</label>  
+          <label className="mr-1">FOG</label>
         </div>
 
         <RegionSection
@@ -35,16 +36,13 @@ export default function PendingProgress() {
           area={area}
           setArea={setArea}
           setChartData={setChartData}
-        />
-        
-        <FilterTglSection
-          region={region}
-          area={area}
+          setLoading={setIsLoading}
+          isLoading={isLoading}
         />
 
-        <DataDisplaySection
-          dataChart={chartData}
-        />
+        <FilterTglSection region={region} area={area} isLoading={isLoading} />
+
+        <DataDisplaySection dataChart={chartData} isLoading={isLoading} />
       </div>
     </div>
   );

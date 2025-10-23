@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { executeQuery } from "@/lib/oracle";
 
-// GET group by ID (tambahkan ROLE ke SELECT)
+// GET group by ID
 export async function GET(request, { params }) {
   const { id } = await params;
 
   const query = `
-    SELECT ID, NAME, DESCRIPTION
-    FROM REPORTFF.GROUPS
-    WHERE ID = :id
+    SELECT ID_DIVISI, KODE_DIVISI,NAMA_DIVISI, DESKRIPSI
+    FROM REPORTFF.TB_DIVISI
+    WHERE ID_DIVISI = :id
   `;
 
   try {
@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
 
     return NextResponse.json({ data: rows[0] });
   } catch (error) {
-    console.error("Gagal ambil data group:", error);
+    console.error("Gagal ambil data divisi:", error);
     return NextResponse.json(
       { error: "Gagal mengambil data" },
       { status: 500 }
@@ -28,22 +28,23 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT update group (tambahkan ROLE ke query dan body)
+// PUT update group
 export async function PUT(request, context) {
   const { params } = context;
-  const { name, description } = await request.json();
+  const { code,name, description } = await request.json();
   const id = params.id;
 
   const query = `
-    UPDATE REPORTFF.GROUPS
-    SET NAME = :name,
-        DESCRIPTION = :description
-    WHERE ID = :id
+    UPDATE REPORTFF.TB_DIVISI
+    SET KODE_DIVISI = :code,
+        NAMA_DIVISI = :name,
+        DESKRIPSI = :description
+    WHERE ID_DIVISI = :id
   `;
 
   try {
-    await executeQuery(query, { id, name, email, role });
-    return NextResponse.json({ message: "Group berhasil diupdate" });
+    await executeQuery(query, { id, code, name, description });
+    return NextResponse.json({ message: "Divisi berhasil diupdate" });
   } catch (error) {
     console.error("Gagal update group:", error);
     return NextResponse.json({ error: "Gagal update data" }, { status: 500 });
@@ -55,11 +56,11 @@ export async function DELETE(request, context) {
   const { params } = context;
   const id = params.id;
 
-  const query = `DELETE FROM REPORTFF.GROUPS WHERE ID = :id`;
+  const query = `DELETE FROM REPORTFF.TB_DIVISI WHERE ID_DIVISI = :id`;
 
   try {
     await executeQuery(query, { id });
-    return NextResponse.json({ message: "Group berhasil dihapus" });
+    return NextResponse.json({ message: "Divisi berhasil dihapus" });
   } catch (error) {
     console.error("Gagal hapus group:", error);
     return NextResponse.json({ error: "Gagal hapus data" }, { status: 500 });

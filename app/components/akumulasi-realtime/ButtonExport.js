@@ -17,8 +17,14 @@ export default function ButtonExport({ startDate, endDate, region, area }) {
     const params = { startDate, endDate };
 
     const getExport = async() => {
-        const res = await fetchExcelExport(params);
-        return res || [];
+        try {
+            const res = await fetchExcelExport(params);
+            return res || [];
+        } catch (error) {
+            console.error("Error in getExport:", error);
+            alert(error.message || "An error occurred while fetching export data");
+            return [];
+        }
     }
 
     const getChart = async () => {
@@ -28,12 +34,15 @@ export default function ButtonExport({ startDate, endDate, region, area }) {
 
     const handleButtonClick = async () => {
         let dataExport = await getExport()
-        let dataChart = await getChart()
-
+        // If getExport failed due to error (e.g., missing dates), it will return empty array
+        // and an alert would have already been shown, so we should return early
         if (dataExport.length === 0) {
-            alert("Data Excel export Wise tidak ada / kosong !");
+            // Don't show the alert if it was already shown in getExport due to error
+            // The error handling in getExport already shows an appropriate message
             return;
         }
+        
+        let dataChart = await getChart()
         if (dataChart.length === 0) {
             alert("Data Excel export Chart Wise tidak ada / kosong !");
             return;
@@ -125,11 +134,14 @@ export default function ButtonExport({ startDate, endDate, region, area }) {
         ]
 
 
+        const safeStartDate = startDate || "ALL";
+        const safeEndDate = endDate || "ALL";
+
         createExportExcel(
             formattedDataExport,
             headers,
             'REALTIME SLA WISE',
-            `${startDate}_${endDate}_REALTIME_SLA_WISE.xlsx`,
+            `${safeStartDate}_${safeEndDate}_REALTIME_SLA_WISE.xlsx`,
         )
         createSummaryExcelFile(
             formattedDataChart,

@@ -19,6 +19,16 @@ export async function GET() {
 export async function POST(request) {
   const { name, description } = await request.json();
 
+  const trimmedName = name?.trim();
+  const trimmedDescription = description?.trim();
+
+  if (!trimmedName || !trimmedDescription) {
+    return NextResponse.json(
+      { error: "Nama dan deskripsi wajib diisi" },
+      { status: 400 }
+    );
+  }
+
   try {
     const query = `
       INSERT INTO REPORTFF.GROUPS (NAME, DESCRIPTION)
@@ -26,8 +36,8 @@ export async function POST(request) {
     `;
 
     await executeQuery(query, {
-      name,
-      description,
+      name: trimmedName,
+      description: trimmedDescription,
     });
 
     return NextResponse.json({ message: "Group berhasil ditambahkan" });

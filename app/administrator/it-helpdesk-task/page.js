@@ -1,173 +1,486 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import * as am4core from "@amcharts/amcharts4/core";
-import * as am4charts from "@amcharts/amcharts4/charts";
-import * as am4themes_animated from "@amcharts/amcharts4/themes/animated";
-import * as XLSX from "xlsx"; // Import XLSX
+import { useState } from "react";
 
-am4core.useTheme(am4themes_animated.default);
+const ItHelpDeskTaskPage = () => {
+  const [nomorAplikasi, setNomorAplikasi] = useState("");
+  const [tipePencarian, setTipePencarian] = useState("reset");
+  const [appliedType, setAppliedType] = useState("reset");
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
+  const [memoText, setMemoText] = useState("");
+  const [previousStage, setPreviousStage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [canUseTaskForm, setCanUseTaskForm] = useState(false);
+  const [oneUpHistory, setOneUpHistory] = useState([]);
+  const [resetMemo, setResetMemo] = useState("");
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
-const PendingProgress = () => {
-    const chartRef = useRef(null);
-    const [region, setRegion] = useState("All");
-    const [area, setArea] = useState("All");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-    const [chartData, setChartData] = useState([]); // State untuk menyimpan data chart
-    const [isButtonClicked, setIsButtonClicked] = useState(false); // New state to track button click
+  const memoRequirementMessages = {
+    back: "Flow code aplikasi harus dalam status LIVE untuk menggunakan Back to Stage Review.",
+    cancel: "Flow code aplikasi harus dalam status -REJECTED untuk menggunakan Cancel Request.",
+    hold: "Flow code aplikasi harus dalam status _HOLD untuk menggunakan Buka Hold.",
+  };
 
-    // Function to fetch data when the "Tampilkan" button is clicked
-    const fetchData = async () => {
-        try {
-            let url = "http://localhost:3000/api/pending-progress?";
-            if (region !== "All") url += `region=${region}&`;
-            if (area !== "All") url += `area=${area}&`;
-            if (startDate) url += `startDate=${startDate}&`;
-            if (endDate) url += `endDate=${endDate}`;
+  const memoInfoLabelMap = {
+    back: "Stage Sebelumnya",
+    cancel: "Flow Code Tujuan",
+    hold: "Flow Code Tujuan",
+  };
 
-            const response = await fetch(url);
-            const result = await response.json();
-            if (result.success) {
-                setChartData(result.data); // Update chartData with fetched data
-            }
-        } catch (error) {
-            console.error("Error fetching data: ", error);
+  const memoButtonClassMap = {
+    back: "bg-green-500 hover:bg-green-600 disabled:bg-green-300",
+    cancel: "bg-red-500 hover:bg-red-600 disabled:bg-red-300",
+    hold: "bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300",
+  };
+
+  const handleSearch = async () => {
+    const trimmedNoApl = nomorAplikasi.trim();
+    if (!trimmedNoApl) {
+      alert("Masukkan nomor aplikasi terlebih dahulu");
+      return;
+    }
+
+    const normalizedType = (tipePencarian || "").toLowerCase();
+
+    setLoading(true);
+    setError("");
+    setHasSearched(true);
+    setCanUseTaskForm(false);
+    setOneUpHistory([]);
+    setResetMemo("");
+    setMemoText("");
+
+    try {
+      const params = new URLSearchParams({ no_apl: trimmedNoApl });
+      if (tipePencarian) {
+        params.set("type", tipePencarian);
+      }
+
+      const response = await fetch(`/api/it-helpdesk-task?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error("Gagal mengambil data");
+      }
+
+      const payload = await response.json();
+      const rows = Array.isArray(payload.data) ? payload.data : [];
+      const limitedRows = rows.length > 0 ? rows.slice(0, 1) : [];
+      const historyRows = Array.isArray(payload.history) ? payload.history : [];
+
+      let memoAllowed = false;
+      if (normalizedType === "back") {
+        if (limitedRows.length > 0) {
+          const firstRow = limitedRows[0] ?? {};
+          const rawFlowCode =
+            firstRow?.FLOW_CODE ??
+            firstRow?.Last_Posisi ??
+            firstRow?.LAST_POSISI ??
+            "";
+          const flowCodeValue = rawFlowCode.toString().toLowerCase();
+          memoAllowed = flowCodeValue.includes("live");
         }
+      } else if (normalizedType === "cancel") {
+        if (limitedRows.length > 0) {
+          const firstRow = limitedRows[0] ?? {};
+          const rawFlowCode =
+            firstRow?.FLOW_CODE ??
+            firstRow?.Last_Posisi ??
+            firstRow?.LAST_POSISI ??
+            "";
+          const flowCodeValue = rawFlowCode.toString().toLowerCase();
+          memoAllowed =
+            flowCodeValue.endsWith("-rejected") ||
+            flowCodeValue.endsWith("_rejected");
+        }
+      } else if (normalizedType === "hold") {
+        if (limitedRows.length > 0) {
+          const firstRow = limitedRows[0] ?? {};
+          const rawFlowCode =
+            firstRow?.FLOW_CODE ??
+            firstRow?.Last_Posisi ??
+            firstRow?.LAST_POSISI ??
+            "";
+          const flowCodeValue = rawFlowCode.toString().toLowerCase();
+          memoAllowed =
+            flowCodeValue.endsWith("_hold") || flowCodeValue.endsWith("-hold");
+        }
+      }
+
+      setData(limitedRows);
+      setPreviousStage(payload.previousStage ?? "");
+      setAppliedType(normalizedType);
+      setCanUseTaskForm(memoAllowed);
+      setOneUpHistory(normalizedType === "reset" ? historyRows : []);
+    } catch (err) {
+      console.error("Error search it helpdesk task:", err);
+      setError(err.message || "Terjadi kesalahan saat mengambil data");
+      setData([]);
+      setPreviousStage("");
+      setAppliedType(normalizedType);
+      setCanUseTaskForm(false);
+      setOneUpHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitMemo = async (event) => {
+    event.preventDefault();
+    const trimmedMemo = memoText.trim();
+    if (!trimmedMemo) {
+      alert("Memo wajib diisi");
+      return;
+    }
+    const trimmedNoApl = nomorAplikasi.trim();
+    if (!trimmedNoApl) {
+      alert("Nomor aplikasi wajib diisi");
+      return;
+    }
+
+    const normalizedType = (appliedType || "").toLowerCase();
+    if (!["back", "cancel", "hold"].includes(normalizedType) || !canUseTaskForm) {
+      alert("Pengubahan flow code hanya tersedia untuk Back to Stage Review, Cancel Request, atau Buka Hold");
+      return;
+    }
+
+    if (normalizedType === "back" && !previousStage) {
+      alert("Stage sebelumnya tidak ditemukan");
+      return;
+    }
+
+    if (["cancel", "hold"].includes(normalizedType) && !previousStage) {
+      alert("Flow code tujuan tidak ditemukan");
+      return;
+    }
+
+    const actionLabels = {
+      back: "Back to Stage Review",
+      cancel: "Cancel Request",
+      hold: "Buka Hold",
     };
+    const actionLabel = actionLabels[normalizedType] ?? "Aksi";
+    const stageLabel = previousStage || "-";
+    const confirmationMessage =
+      ["cancel", "hold"].includes(normalizedType)
+        ? `Flow code aplikasi ${trimmedNoApl} akan diubah menjadi "${stageLabel}" melalui ${actionLabel}. Lanjutkan?`
+        : `Flow code aplikasi ${trimmedNoApl} akan diubah ke stage "${stageLabel}" melalui ${actionLabel}. Lanjutkan?`;
+    const confirmed = window.confirm(
+      confirmationMessage
+    );
+    if (!confirmed) {
+      return;
+    }
 
-    useEffect(() => {
-        // Create chart after data is fetched
-        if (chartData.length === 0) return; // Don't create chart if no data
+    try {
+      setSubmitting(true);
+      const response = await fetch("/api/it-helpdesk-task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          no_apl: trimmedNoApl,
+          memo: trimmedMemo,
+          type: normalizedType,
+        }),
+      });
 
-        let chart = am4core.create("chartdiv", am4charts.XYChart);
-        chartRef.current = chart;
-        chart.paddingRight = 20;
-        chart.data = chartData; // Use fetched data for the chart
+      const payload = await response
+        .json()
+        .catch(() => ({ message: "" }));
 
-        let categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
-        categoryAxis.dataFields.category = "category";
-        categoryAxis.renderer.grid.template.location = 0;
-        categoryAxis.renderer.minGridDistance = 20;
-        categoryAxis.renderer.labels.template.rotation = -45;
-        categoryAxis.renderer.cellStartLocation = 0.2;
-        categoryAxis.renderer.cellEndLocation = 0.8;
+      if (!response.ok) {
+        throw new Error(payload?.error || "Gagal memperbarui flow code");
+      }
 
-        let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-        valueAxis.renderer.labels.template.fontSize = 12;
-        valueAxis.renderer.minWidth = 50;
+      alert(payload?.message || "Flow code berhasil diperbarui");
+      setMemoText("");
+      await handleSearch();
+    } catch (err) {
+      console.error("Error submit memo:", err);
+      alert(err.message || "Terjadi kesalahan saat mengirim memo");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-        // Set a max value for the valueAxis to avoid cut-off values
-        valueAxis.max = Math.max(...chart.data.map(d => Math.max(d.IN, d.LAST))) * 1.1;
+  const handleSubmitReset = async (event) => {
+    event.preventDefault();
+    const trimmedMemo = resetMemo.trim();
+    if (!trimmedMemo) {
+      alert("Memo wajib diisi");
+      return;
+    }
 
-        const createSeries = (field, name, color) => {
-            let series = chart.series.push(new am4charts.ColumnSeries());
-            series.dataFields.valueY = field;
-            series.dataFields.categoryX = "category";
-            series.name = name;
-            series.columns.template.fill = color;
-            series.columns.template.strokeWidth = 0;
-            series.columns.template.width = am4core.percent(50);
+    const trimmedNoApl = nomorAplikasi.trim();
+    if (!trimmedNoApl) {
+      alert("Nomor aplikasi wajib diisi");
+      return;
+    }
 
-            let labelBullet = series.bullets.push(new am4charts.LabelBullet());
-            labelBullet.label.text = "{valueY}";
-            labelBullet.label.dy = -10;
-            labelBullet.label.fontSize = 12;
-            labelBullet.label.fontWeight = "bold";
-            labelBullet.label.truncate = false;
-            labelBullet.label.wrap = false;
-            labelBullet.label.hideOversized = false;
+    const confirmed = window.confirm(
+      `Reset One Up Level untuk aplikasi ${trimmedNoApl} akan diproses. Lanjutkan?`
+    );
+    if (!confirmed) {
+      return;
+    }
 
-            // Enable zoom functionality
-            chart.cursor = new am4charts.XYCursor();
-            chart.cursor.behavior = "zoomX";
-        };
+    try {
+      setResetSubmitting(true);
+      const response = await fetch("/api/it-helpdesk-task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          no_apl: trimmedNoApl,
+          memo: trimmedMemo,
+          type: "reset",
+        }),
+      });
 
-        createSeries("IN", "IN", am4core.color("#007fff"));
-        createSeries("LAST", "LAST", am4core.color("#dc3545"));
+      const payload = await response
+        .json()
+        .catch(() => ({ message: "" }));
 
-        return () => {
-            chart.dispose();
-        };
-    }, [chartData]); // Re-render chart whenever chartData changes
+      if (!response.ok) {
+        throw new Error(payload?.error || "Gagal mengirim permintaan reset");
+      }
 
-    // Call fetchData only when the "Tampilkan" button is clicked
-    const handleButtonClick = () => {
-        setIsButtonClicked(true);
-        fetchData();
-    };
+      alert(payload?.message || "Reset One Up Level berhasil diproses");
+      setResetMemo("");
+      await handleSearch();
+    } catch (err) {
+      console.error("Error submit reset memo:", err);
+      alert(err.message || "Terjadi kesalahan saat mengirim permintaan reset");
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
 
-    // Function to export chart data as Excel
-    const exportToExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(chartData); // Convert data to worksheet
-        const wb = XLSX.utils.book_new(); // Create a new workbook
-        XLSX.utils.book_append_sheet(wb, ws, "Pending Data"); // Append worksheet to workbook
-        XLSX.writeFile(wb, "Pending_Progress_Data.xlsx"); // Write file as Excel
-    };
+  const renderTable = () => {
+    if (loading) {
+      return <div className="mt-4 text-sm text-gray-600">Memuat data...</div>;
+    }
+
+    if (error) {
+      return <div className="mt-4 text-sm text-red-600">{error}</div>;
+    }
+
+    if (!data || data.length === 0) {
+      return <div className="mt-4 text-sm text-gray-600">Data tidak ditemukan.</div>;
+    }
+
+    const normalizedType = (appliedType || "").toLowerCase();
+
+    if (!normalizedType || normalizedType === "reset") {
+      return (
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full table-auto border border-gray-300 text-sm">
+            <caption className="caption-top px-4 py-2 text-left text-base font-semibold text-gray-700">
+              DETAIL WISE TBL APLIKASI (CURRENT POSITION)
+            </caption>
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-4 py-2 text-left">No. Aplikasi</th>
+                <th className="border px-4 py-2 text-left">Flow Code</th>
+                <th className="border px-4 py-2 text-left">Create Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, index) => (
+                <tr key={index}>
+                  <td className="border px-4 py-2">{row.NO_APLIKASI ?? "-"}</td>
+                  <td className="border px-4 py-2">{row.FLOW_CODE ?? "-"}</td>
+                  <td className="border px-4 py-2">{row.CREATE_DATE ?? "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
 
     return (
-        <div className="p-6 bg-gray-100 min-h-screen">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-semibold mb-4">Dashboard Daily In Progress & Pending</h2>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-end">
-                    <div>
-                        <label className="block text-sm font-medium">Pilih Region</label>
-                        <select className="w-full p-2 border rounded" value={region} onChange={(e) => setRegion(e.target.value)}>
-                            <option>All</option>
-                            <option>Region 1</option>
-                            <option>Region 2</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Pilih Area</label>
-                        <select className="w-full p-2 border rounded" value={area} onChange={(e) => setArea(e.target.value)}>
-                            <option>All</option>
-                            <option>Area 1</option>
-                            <option>Area 2</option>
-                        </select>
-                    </div>
-                    <button
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                        onClick={handleButtonClick} // Trigger data fetching on button click
-                    >
-                        Tampilkan
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 items-end">
-                    <div>
-                        <label className="block text-sm font-medium">Mulai Dari</label>
-                        <input type="date" className="w-full p-2 border rounded" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Sampai Dengan</label>
-                        <input type="date" className="w-full p-2 border rounded" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                    </div>
-                    <button
-                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                        onClick={exportToExcel} // Trigger export to Excel
-                    >
-                        Download Data WISE
-                    </button>
-                </div>
-
-                <div className="w-full">
-                    <div id="chartdiv" className="w-full h-96"></div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mt-6">
-                    <div className="p-4 bg-green-300 rounded text-center">Cair (Hari ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-green-600 rounded text-center">Cair (Bulan ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-red-100 rounded text-center">Cancel (Hari ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-red-300 rounded text-center">Cancel (Bulan ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-red-400 rounded text-center">Reject (Hari ini): <span className="font-semibold">429</span></div>
-                    <div className="p-4 bg-red-600 rounded text-center">Reject (Bulan ini): <span className="font-semibold">39</span></div>
-                    <div className="p-4 bg-gray-300 rounded text-center">Hold (Bulan ini): <span className="font-semibold">55</span></div>
-                </div>
-            </div>
-        </div>
+      <div className="mt-4 overflow-x-auto">
+        <table className="min-w-full table-auto border border-gray-300 text-sm">
+          <caption className="caption-top px-4 py-2 text-left text-base font-semibold text-gray-700">
+            DETAIL WISE TBL APLIKASI (CURRENT POSITION)
+          </caption>
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border px-4 py-2 text-left">Tanggal</th>
+              <th className="border px-4 py-2 text-left">No. Aplikasi</th>
+              <th className="border px-4 py-2 text-left">Nama Nasabah</th>
+              <th className="border px-4 py-2 text-left">Jenis Produk</th>
+              <th className="border px-4 py-2 text-left">Last Posisi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, index) => (
+              <tr key={index}>
+                <td className="border px-4 py-2">{row.CREATE_DATE ?? "-"}</td>
+                <td className="border px-4 py-2">{row.NO_APLIKASI ?? "-"}</td>
+                <td className="border px-4 py-2">{row.NAMA_NASABAH ?? "-"}</td>
+                <td className="border px-4 py-2">{row.JENIS_PRODUK ?? "-"}</td>
+                <td className="border px-4 py-2">{row.LAST_POSISI ?? row.FLOW_CODE ?? "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
+  };
+
+  const normalizedAppliedType = (appliedType || "").toLowerCase();
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="rounded-lg bg-white p-6 shadow-md">
+        <h2 className="mb-4 text-lg font-semibold">Cari Data IT Helpdesk Task</h2>
+
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+          <label className="flex w-full items-center gap-2 text-sm text-gray-700 md:max-w-md">
+            <span className="whitespace-nowrap font-medium">No Aplikasi :</span>
+            <input
+              type="text"
+              className="w-full flex-1 rounded border px-3 py-2"
+              value={nomorAplikasi}
+              onChange={(event) => setNomorAplikasi(event.target.value)}
+              placeholder="Masukkan Nomor Aplikasi"
+            />
+          </label>
+
+          <label className="flex w-full items-center gap-2 text-sm text-gray-700 md:w-auto">
+            <span className="whitespace-nowrap font-medium">Task :</span>
+            <select
+              className="w-full rounded border px-3 py-2 md:w-56"
+              value={tipePencarian}
+              onChange={(event) => setTipePencarian(event.target.value)}
+            >
+              <option value="reset">Reset One Up Level (WISE)</option>
+              <option value="otor">Otor Live (WISE)</option>
+              <option value="hold">Buka Hold (WISE)</option>
+              <option value="back">Back to Stage Review (WISE)</option>
+              <option value="cancel">Cancel Request (WISE)</option>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            className="rounded bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
+            onClick={handleSearch}
+            disabled={loading}
+          >
+            {loading ? "Mencari..." : "Search"}
+          </button>
+        </div>
+        {hasSearched && (
+          <>
+            {renderTable()}
+
+            {(appliedType || "").toLowerCase() === "reset" &&
+              oneUpHistory.length > 0 && (
+                <div className="mt-6 overflow-x-auto">
+                  <table className="min-w-full table-auto border border-gray-300 text-sm">
+                    <caption className="caption-top px-4 py-2 text-left text-base font-semibold text-gray-700">
+                      History One Up Level
+                    </caption>
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="border px-4 py-2 text-left">Tgl Input</th>
+                        <th className="border px-4 py-2 text-left">No. Aplikasi</th>
+                        <th className="border px-4 py-2 text-left">Branch Code</th>
+                        <th className="border px-4 py-2 text-left">Flow Code</th>
+                        <th className="border px-4 py-2 text-left">Create By</th>
+                        <th className="border px-4 py-2 text-left">User ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {oneUpHistory.map((row, index) => (
+                        <tr key={index}>
+                          <td className="border px-4 py-2">{row.CREATE_DATE ?? "-"}</td>
+                          <td className="border px-4 py-2">{row.NO_APLIKASI ?? "-"}</td>
+                          <td className="border px-4 py-2">{row.BRANCH_CODE ?? "-"}</td>
+                          <td className="border px-4 py-2">{row.FLOW_CODE ?? "-"}</td>
+                          <td className="border px-4 py-2">{row.CREATE_BY ?? "-"}</td>
+                          <td className="border px-4 py-2">{row.USER_ID ?? "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+            {(appliedType || "").toLowerCase() === "reset" &&
+              data.length > 0 &&
+              oneUpHistory.length > 0 && (
+              <form onSubmit={handleSubmitReset} className="mt-6 space-y-2">
+                <h3 className="text-base font-semibold text-gray-800">Reset One Up Level</h3>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="reset-memo">
+                  Memo
+                </label>
+                <textarea
+                  id="reset-memo"
+                  className="w-full rounded border px-3 py-2 text-sm"
+                  rows={4}
+                  value={resetMemo}
+                  onChange={(event) => setResetMemo(event.target.value)}
+                  required
+                  placeholder="Tulis memo untuk reset one up level"
+                />
+                <button
+                  type="submit"
+                  className="rounded bg-indigo-500 px-4 py-2 text-white transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:bg-indigo-300"
+                  disabled={resetSubmitting}
+                >
+                  {resetSubmitting ? "Memproses..." : "Submit"}
+                </button>
+              </form>
+            )}
+
+            {["back", "cancel", "hold"].includes(normalizedAppliedType) &&
+              data.length > 0 && (
+              <div className="mt-6">
+                {!canUseTaskForm ? (
+                  <p className="text-sm text-red-600">
+                    {memoRequirementMessages[normalizedAppliedType] ??
+                      "Flow code aplikasi belum memenuhi syarat untuk melakukan aksi ini."}
+                  </p>
+                ) : (
+                  <form onSubmit={handleSubmitMemo} className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Memo
+                    </label>
+                    <p className="text-xs text-gray-500">
+                      {(memoInfoLabelMap[normalizedAppliedType] ?? "Stage Sebelumnya") +
+                        ` : ${previousStage || "-"}`}
+                    </p>
+                    <textarea
+                      className="w-full rounded border px-3 py-2 text-sm"
+                      rows={4}
+                      value={memoText}
+                      onChange={(event) => setMemoText(event.target.value)}
+                      required
+                      placeholder="Tulis memo di sini"
+                    />
+                    <button
+                      type="submit"
+                      className={`rounded px-4 py-2 text-white transition disabled:cursor-not-allowed ${
+                        memoButtonClassMap[normalizedAppliedType] ??
+                        "bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300"
+                      }`}
+                      disabled={submitting}
+                    >
+                      {submitting ? "Memproses..." : "Submit"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
 };
 
-export default PendingProgress;
+export default ItHelpDeskTaskPage;

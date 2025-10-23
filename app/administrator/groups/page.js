@@ -4,11 +4,14 @@ import React, { useEffect, useState, useMemo } from "react";
 
 const GroupsTable = () => {
   const [groups, setGroups] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const fetchGroups = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/groups");
+      const res = await fetch("/api/groups");
       const result = await res.json();
       setGroups(Array.isArray(result.data) ? result.data : []);
     } catch (err) {
@@ -23,7 +26,7 @@ const GroupsTable = () => {
   const handleDelete = async (id) => {
     if (!confirm("Yakin mau hapus group ini?")) return;
     try {
-      await fetch(`http://localhost:3000/api/groups/${id}`, {
+      await fetch(`/api/groups/${id}`, {
         method: "DELETE",
       });
       setGroups((prev) => prev.filter((g) => g.ID !== id));
@@ -34,35 +37,44 @@ const GroupsTable = () => {
 
   const handleSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
+    if (sortConfig.key === key && sortConfig.direction === "asc")
       direction = "desc";
-    }
     setSortConfig({ key, direction });
   };
 
+  const filteredGroups = useMemo(() => {
+    const normalizedTerm = searchTerm.toLowerCase();
+    return groups.filter((g) =>
+      `${g.NAME || ""} ${g.DESCRIPTION || ""}`
+        .toLowerCase()
+        .includes(normalizedTerm)
+    );
+  }, [groups, searchTerm]);
+
   const sortedGroups = useMemo(() => {
-    let sorted = [...groups];
+    let sorted = [...filteredGroups];
     if (sortConfig.key) {
       sorted.sort((a, b) => {
         const aVal = a[sortConfig.key]?.toString().toLowerCase() || "";
         const bVal = b[sortConfig.key]?.toString().toLowerCase() || "";
-        if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
+        return sortConfig.direction === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
       });
     }
     return sorted;
-  }, [groups, sortConfig]);
+  }, [filteredGroups, sortConfig]);
+
+  const totalPages = Math.ceil(sortedGroups.length / itemsPerPage);
+  const paginatedGroups = sortedGroups.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const columns = [
     { key: "", label: "No." },
-    { key: "FIRST_NAME", label: "First Name" },
-    { key: "LAST_NAME", label: "Last Name" },
-    { key: "USERNAME", label: "Username" },
-    { key: "EMAIL", label: "Email" },
-    { key: "STATUS", label: "Status" },
-    { key: "DIVISI", label: "Divisi" },
-    { key: "NAME", label: "Role" },
+    { key: "NAME", label: "Name" },
+    { key: "DESCRIPTION", label: "Description" },
   ];
 
   const renderSortIcon = (key) => {
@@ -73,18 +85,45 @@ const GroupsTable = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex items-center justify-between mb-4">
+        {/* Header & Controls */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
           <h2 className="text-lg font-semibold">Tabel Data Groups</h2>
-          <button
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            onClick={() =>
-              (window.location.href = "/administrator/groups/create")
-            }
-          >
-            + Create Group
-          </button>
+          <div className="flex gap-4 flex-wrap md:flex-nowrap">
+            <input
+              type="text"
+              className="p-2 border rounded w-full md:w-auto"
+              placeholder="Cari grup..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+            <select
+              className="p-2 border rounded"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+            <button
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              onClick={() =>
+                (window.location.href = "/administrator/groups/create")
+              }
+            >
+              + Create Group
+            </button>
+          </div>
         </div>
 
+        {/* Table */}
         <table className="min-w-full table-auto border border-black-300">
           <thead className="bg-gray-200">
             <tr>
@@ -106,16 +145,14 @@ const GroupsTable = () => {
             </tr>
           </thead>
           <tbody>
-            {sortedGroups.map((group, index) => (
+            {paginatedGroups.map((group, index) => (
               <tr key={index}>
-                <td className="px-4 py-2 border">{index + 1}</td>
-                <td className="px-4 py-2 border">{group.FIRST_NAME}</td>
-                <td className="px-4 py-2 border">{group.LAST_NAME}</td>
-                <td className="px-4 py-2 border">{group.USERNAME}</td>
-                <td className="px-4 py-2 border">{group.EMAIL}</td>
-                <td className="px-4 py-2 border">{group.STATUS}</td>
-                <td className="px-4 py-2 border">{group.DIVISI}</td>
+                <td className="px-4 py-2 border">
+                  {(currentPage - 1) * itemsPerPage + index + 1}
+                </td>
+
                 <td className="px-4 py-2 border">{group.NAME}</td>
+                <td className="px-4 py-2 border">{group.DESCRIPTION}</td>
                 <td className="px-4 py-2 border flex items-center space-x-2">
                   <button
                     className="p-2 bg-yellow-500 rounded hover:bg-yellow-600 text-white"
@@ -134,7 +171,7 @@ const GroupsTable = () => {
                 </td>
               </tr>
             ))}
-            {sortedGroups.length === 0 && (
+            {paginatedGroups.length === 0 && (
               <tr>
                 <td
                   colSpan={columns.length + 1}
@@ -146,6 +183,29 @@ const GroupsTable = () => {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        <div className="mt-4 flex justify-between items-center text-sm">
+          <span>
+            Halaman {currentPage} dari {totalPages || 1}
+          </span>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+            >
+              ⬅️ Prev
+            </button>
+            <button
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Next ➡️
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

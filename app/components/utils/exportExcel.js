@@ -1,6 +1,5 @@
 // utils/excelUtils.js
 import * as XLSX from "xlsx";
-// import { saveAs } from "file-saver";
 
 export const createExportExcel = (formattedData, headers, sheetName, fileName) => {
   const ws = XLSX.utils.json_to_sheet(formattedData);
@@ -9,8 +8,19 @@ export const createExportExcel = (formattedData, headers, sheetName, fileName) =
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-  // Menulis dan mendownload file Excel
-  XLSX.writeFile(wb, fileName);
+  // Browser-compatible approach for downloading
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([wbout], { type: "application/octet-stream" });
+  
+  // Create download link
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 export const createSummaryExcelFile = (formattedData, headers, title, sheetName, fileName) => {
@@ -30,5 +40,17 @@ export const createSummaryExcelFile = (formattedData, headers, title, sheetName,
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-  XLSX.writeFile(wb, fileName);
+  // Browser-compatible approach for downloading
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([wbout], { type: "application/octet-stream" });
+  
+  // Create download link
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };

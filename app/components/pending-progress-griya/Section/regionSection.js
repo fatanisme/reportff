@@ -10,7 +10,10 @@ export default function regionSection({
     setRegion, 
     area, 
     setArea, 
-    setChartData}) 
+    setChartData,
+    setLoading,
+    isLoading,
+}) 
     {
     const [regions, setRegions] = useState([]);
     const [areas, setAreas] = useState([]);
@@ -18,27 +21,38 @@ export default function regionSection({
     useEffect(() => {
         const getRegions = async()=>{
             const res = await fetchRegions()
-            setRegions(res)
+            setRegions(res || [])
         }
         getRegions()
     }, []);
 
     useEffect(() => {
+        if (!region) return;
         const getAreas = async()=>{
-            const res = await fetchAreas(region,area)
-            setAreas(res)
+            const res = await fetchAreas({ region })
+            setAreas(res || [])
         }
         getAreas()
     }, [region]);
 
     const getDataChart = async()=>{
         const params = { startDate, endDate, region, area };
-        const res = await fetchChartData(params)
-        setChartData(res)
+        try {
+            setLoading(true);
+            const res = await fetchChartData(params)
+            setChartData(res || [])
+        } catch (error) {
+            console.error("Gagal memuat data chart griya:", error);
+            setChartData([]);
+        } finally {
+            setLoading(false);
+        }
     }
 
     const handleButtonClick = () => {
-        getDataChart()
+        if (!isLoading) {
+            getDataChart()
+        }
     };
     return (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-end">
@@ -49,6 +63,7 @@ export default function regionSection({
                 onChange={setRegion}
                 valueKey="KODE_REGION"
                 labelKey="REGION_ALIAS"
+                disabled={isLoading}
             />
             <Dropdown
                 label="Pilih Area"
@@ -57,13 +72,15 @@ export default function regionSection({
                 onChange={setArea}
                 valueKey="KODE_AREA"
                 labelKey="AREA"
+                disabled={isLoading}
             />
 
             <Button
                 className="bg-blue-500 text-white px-4 text-sm py-2 rounded hover:bg-blue-600 w-1/2"
                 onClick={handleButtonClick}
+                disabled={isLoading}
             >
-                Tampilkan
+                {isLoading ? 'Memuat...' : 'Tampilkan'}
             </Button>
         </div>
     );

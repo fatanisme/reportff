@@ -2,81 +2,78 @@
 
 import { useState } from "react";
 
-export default function CreateUserPage() {
+export default function CreateGroupPage() {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("user"); // default role
+  const [description, setDescription] = useState("");
+
+  const handleBack = () => {
+    window.location.href = "/administrator/groups";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await fetch("http://localhost:3000/api/users", {
+      const response = await fetch("/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, description }),
       });
-      alert("User berhasil ditambahkan");
-      window.location.href = "/administrator/users";
+
+      const result = await response.json();
+      if (!response.ok) {
+        alert(result?.error || "Gagal tambah group");
+        return;
+      }
+
+      alert("Group berhasil ditambahkan");
+      window.location.href = "/administrator/groups";
     } catch (err) {
-      console.error("Gagal tambah user:", err);
+      console.error("Gagal tambah group:", err);
     }
   };
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-lg font-semibold mb-4">Tambah User Baru</h2>
+        <h2 className="text-lg font-semibold mb-4">Tambah Group Baru</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium">Nama</label>
+            <label className="block text-sm font-medium">Nama Group</label>
             <input
               type="text"
               className="w-full px-3 py-2 border rounded"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoFocus
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Email</label>
-            <input
-              type="email"
+            <label className="block text-sm font-medium">Deskripsi</label>
+            <textarea
               className="w-full px-3 py-2 border rounded"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              rows={4}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               required
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium">Password</label>
-            <input
-              type="password"
-              className="w-full px-3 py-2 border rounded"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Role</label>
-            <select
-              className="w-full px-3 py-2 border rounded"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              required
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
             >
-              <option value="admin">Admin</option>
-              <option value="editor">Editor</option>
-              <option value="user">User</option>
-            </select>
+              Kembali
+            </button>
+            <button
+              type="submit"
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Simpan
+            </button>
           </div>
-          <button
-            type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Simpan
-          </button>
         </form>
       </div>
     </div>

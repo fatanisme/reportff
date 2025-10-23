@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Chart from '../../ui/Chart3';
+import LoadingOverlay from '../../ui/LoadingOverlay';
 import {
     fetchChartData
 } from '../getData';
 
 export default function DataDisplaySection() {
     const [chart, setChart] = useState([]);
+    const isChartLoading = !chart || chart.length === 0;
 
     const getDataChart = async () => {
         const res = await fetchChartData()
@@ -24,8 +26,11 @@ export default function DataDisplaySection() {
     const cancelData = chart.length != 0 ? chart[0].SUM_CANCEL : 0;
 
     return (
-        <div className="grid grid-cols-1 gap-4 mt-6">
-            <Chart data={chart} />
+        <div className="grid grid-cols-1 gap-4 mt-6 relative">
+            <div className={`${isChartLoading ? 'pointer-events-none opacity-70' : ''}`}>
+                <Chart data={chart} />
+            </div>
+            <LoadingOverlay show={isChartLoading} />
             <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mt-6">
                 {cairData && (
                     <>

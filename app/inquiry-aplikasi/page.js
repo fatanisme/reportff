@@ -17,7 +17,7 @@ const InquiryAplikasi = () => {
         setLoading(true); // Start loading state
         try {
             const response = await fetch(
-                `http://localhost:3000/api/inquiry-aplikasi?no_apl=${nomorAplikasi}`
+                `/api/inquiry-aplikasi?no_apl=${nomorAplikasi}`
             );
             const result = await response.json();
             if (result.success) {

@@ -51,9 +51,11 @@ export const fetchExcelDetail = async ({ startDate, endDate, region, area }) => 
     try {
         const query = buildQuery({ startDate, endDate, kode_region: region, kode_area: area });
         const { data } = await axios.get(`/export/pending-progress-griya?${query}`);
-        if (data.success) return data.data;
+        if (data.success) return data.data || [];
+        return [];
     } catch (error) {
         console.error("Error fetching detail Excel data:", error);
+        return [];
     }
 };
 

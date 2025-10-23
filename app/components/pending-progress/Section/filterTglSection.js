@@ -1,8 +1,8 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import DateInput from '../../ui/DateInput';
-import ButtonExport from '../ButtonExport'   
+import ButtonExport from '../ButtonExport';
 
-export default function filterTglSection({ region,area }) {
+export default function filterTglSection({ region, area, isLoading }) {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
@@ -11,13 +11,17 @@ export default function filterTglSection({ region,area }) {
             <div>
                 <label className="block text-sm font-medium">Mulai Dari</label>
                 <DateInput
-                    value={startDate} onChange={setStartDate}
+                    value={startDate}
+                    onChange={setStartDate}
+                    disabled={isLoading}
                 />
             </div>
             <div>
                 <label className="block text-sm font-medium">Sampai Dengan</label>
                 <DateInput
-                    value={endDate} onChange={setEndDate}
+                    value={endDate}
+                    onChange={setEndDate}
+                    disabled={isLoading}
                 />
             </div>
             <ButtonExport
@@ -25,6 +29,7 @@ export default function filterTglSection({ region,area }) {
                 endDate = {endDate}
                 region = {region}
                 area = {area}
+                disabled={isLoading}
             />
         </div>
     );

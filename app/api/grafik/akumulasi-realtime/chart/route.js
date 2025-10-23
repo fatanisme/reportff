@@ -1,28 +1,20 @@
 import { executeQuery } from "@/lib/oracle";
-import oracledb from "oracledb";
+import { readFileSync } from "fs";
+import path from "path";
 
-export async function GET(req) {
-    try {
+const chartQuery = readFileSync(
+  path.join(process.cwd(), "lib/sql/akumulasi_realtime_chart.sql"),
+  "utf8",
+);
 
-        const query = `
-            BEGIN
-            akumulasi_realtime_chart(
-                :p_cursor
-            );
-            END;
-        `;
-
-        const binds = {
-            p_cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR }
-        };
-
-        const datas = await executeQuery(query, binds);
-
-        return Response.json({ success: true, data: datas });
-    } catch (error) {
-        return Response.json(
-            { success: false, error: error.message },
-            { status: 500 }
-        );
-    }
+export async function GET() {
+  try {
+    const data = await executeQuery(chartQuery);
+    return Response.json({ success: true, data });
+  } catch (error) {
+    return Response.json(
+      { success: false, error: error.message },
+      { status: 500 },
+    );
+  }
 }

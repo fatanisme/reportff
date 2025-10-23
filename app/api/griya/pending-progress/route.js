@@ -1,46 +1,72 @@
 import { executeQuery } from "@/lib/oracle";
-import oracledb from "oracledb";
+import { readFileSync } from "fs";
+import path from "path";
+
+const getTodayJakarta = () => {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+  });
+  return formatter.format(new Date());
+};
+
+const REGION_AREA_FILTER = `
+  AND (
+    :p_kode_region = 'All'
+    OR (
+      :p_kode_region <> 'All' AND (
+        CASE
+          WHEN b.LVL = '2' THEN (
+            SELECT c.BRANCH_CODE FROM ILOS.TBL_BRANCH c WHERE c.BRANCH_CODE = b.PARENT_ID
+          )
+          WHEN b.LVL = '3' THEN (
+            SELECT c.BRANCH_CODE FROM ILOS.TBL_BRANCH c WHERE c.BRANCH_CODE = b.PARENT_ADMINISTRASI
+          )
+          ELSE NULL
+        END
+      ) = :p_kode_region
+    )
+  )
+  AND (
+    :p_kode_area = 'All'
+    OR (
+      :p_kode_area <> 'All' AND (
+        CASE
+          WHEN b.LVL = '2' THEN b.BRANCH_CODE
+          WHEN b.LVL = '3' THEN (
+            SELECT c.BRANCH_CODE FROM ILOS.TBL_BRANCH c WHERE c.BRANCH_CODE = b.PARENT_ID
+          )
+          ELSE NULL
+        END
+      ) = :p_kode_area
+    )
+  )
+`;
+
+const RAW_QUERY = readFileSync(
+  path.join(process.cwd(), "lib/sql/griya_pending_progress_grafik.sql"),
+  "utf8",
+);
+
+const DASHBOARD_QUERY = RAW_QUERY.split("__FILTER__").join(REGION_AREA_FILTER);
 
 export async function GET(req) {
-    try {
-        const kodeArea = req.nextUrl.searchParams.get("kode_area") || 'All';
-        const kodeRegion = req.nextUrl.searchParams.get("kode_region") || 'All';
+  try {
+    const kodeArea = req.nextUrl.searchParams.get("kode_area") || "All";
+    const kodeRegion = req.nextUrl.searchParams.get("kode_region") || "All";
 
-        //real
-        // const tgll = new Date().toISOString().slice(0, 10);
+    const todayJakarta = getTodayJakarta();
 
-        // dummy
-        const tgll = '2024-05-02';
+    const data = await executeQuery(DASHBOARD_QUERY, {
+      p_tgll: todayJakarta,
+      p_kode_region: kodeRegion,
+      p_kode_area: kodeArea,
+    });
 
-        let ro_se = kodeRegion === 'All' ? 'All' : kodeRegion;
-        let ar_se = kodeArea === 'All' ? 'All' : kodeArea;
-
-        const query = `
-            BEGIN
-            griya_pending_progress_grafik(
-                :p_tgll,
-                :p_kode_region,
-                :p_kode_area,
-                :p_cursor
-            );
-            END;
-        `;
-
-        const binds = {
-            p_tgll: tgll,
-            p_kode_region: ro_se,
-            p_kode_area: ar_se,
-            p_cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR }
-        };
-
-        const datas = await executeQuery(query, binds);
-
-
-        return Response.json({ success: true, data: datas });
-    } catch (error) {
-        return Response.json(
-            { success: false, error: error.message },
-            { status: 500 }
-        );
-    }
+    return Response.json({ success: true, data });
+  } catch (error) {
+    return Response.json(
+      { success: false, error: error.message },
+      { status: 500 },
+    );
+  }
 }

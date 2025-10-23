@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Chart from '../../ui/Chart';
-import {
-    fetchCair
-} from '../getData';
+import LoadingOverlay from '../../ui/LoadingOverlay';
+import { fetchCair } from '../getData';
 
-export default function DataDisplaySection({ dataChart }) {
+export default function DataDisplaySection({ dataChart, isLoading }) {
     const [cairs, setCairs] = useState([]);
+    const hasData = Array.isArray(dataChart) && dataChart.length > 0;
+    const isChartLoading = Boolean(isLoading);
 
     const getDataCair = async () => {
         const res = await fetchCair()
-        setCairs(res)
+        setCairs(res || [])
     }
 
     useEffect(() => {
@@ -21,8 +22,17 @@ export default function DataDisplaySection({ dataChart }) {
     const cancelData = cairs.find(item => item.CATEGORY === "CANCEL");
 
     return (
-        <div className="grid grid-cols-1 gap-4 mt-6">
-            <Chart data={dataChart} />
+        <div className="grid grid-cols-1 gap-4 mt-6 relative">
+            <div className={`${isChartLoading ? 'pointer-events-none opacity-70' : ''}`}>
+                {hasData ? (
+                    <Chart data={dataChart} />
+                ) : (
+                    <div className="flex items-center justify-center h-96 border border-dashed border-gray-300 rounded">
+                        <p className="text-sm text-gray-500">Data belum tersedia. Silakan tekan tombol Tampilkan.</p>
+                    </div>
+                )}
+            </div>
+            <LoadingOverlay show={isChartLoading} />
             <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mt-6">
                 {cairData && (
                     <>

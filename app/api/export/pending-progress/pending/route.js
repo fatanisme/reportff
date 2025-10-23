@@ -20,7 +20,7 @@ export async function GET(req) {
 
     const query = `
         BEGIN
-        pending_progress_pending(
+        ILOS.pending_progress_pending(
             :p_tgll,
             :p_kode_region,
             :p_kode_area,

@@ -1,10 +1,18 @@
-import React, {useState} from 'react';
+import React, { useMemo, useState } from 'react';
 import DateInput from '../../ui/DateInput';
-import ButtonExport from '../ButtonExport'   
+import ButtonExport from '../ButtonExport';
 
-export default function filterTglSection({ region,area }) {
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+const getTodayJakarta = () => {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+  });
+  return formatter.format(new Date());
+};
+
+export default function FilterTglSection({ region, area }) {
+    const defaultDate = useMemo(() => getTodayJakarta(), []);
+    const [startDate, setStartDate] = useState(defaultDate);
+    const [endDate, setEndDate] = useState(defaultDate);
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-end">
@@ -21,10 +29,10 @@ export default function filterTglSection({ region,area }) {
                 />
             </div>
             <ButtonExport
-                startDate = {startDate}
-                endDate = {endDate}
-                region = {region}
-                area = {area}
+                startDate={startDate}
+                endDate={endDate}
+                region={region}
+                area={area}
             />
         </div>
     );

@@ -11,6 +11,7 @@ export default function PendingProgressGriya() {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [chartData, setChartData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <div className="p-2 bg-gray-100 min-h-screen">
@@ -35,17 +36,21 @@ export default function PendingProgressGriya() {
           area={area}
           setArea={setArea}
           setChartData={setChartData}
+          setLoading={setIsLoading}
+          isLoading={isLoading}
         />
         
         <FilterTglSection
           region={region}
           area={area}
+          isLoading={isLoading}
         />
 
         <DataDisplaySection
           dataChart={chartData}
           region={region}
           area={area}
+          isLoading={isLoading}
         />
       </div>
     </div>

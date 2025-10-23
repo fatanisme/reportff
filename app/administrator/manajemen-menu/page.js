@@ -1,173 +1,730 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import * as am4core from "@amcharts/amcharts4/core";
-import * as am4charts from "@amcharts/amcharts4/charts";
-import * as am4themes_animated from "@amcharts/amcharts4/themes/animated";
-import * as XLSX from "xlsx"; // Import XLSX
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-am4core.useTheme(am4themes_animated.default);
+const createDefaultFormState = () => ({
+  id: null,
+  urlPath: "",
+  allowAll: "0",
+  allowAnonymous: "0",
+  groupIds: [],
+  divisionIds: [],
+});
 
-const PendingProgress = () => {
-    const chartRef = useRef(null);
-    const [region, setRegion] = useState("All");
-    const [area, setArea] = useState("All");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-    const [chartData, setChartData] = useState([]); // State untuk menyimpan data chart
-    const [isButtonClicked, setIsButtonClicked] = useState(false); // New state to track button click
+export default function ManajemenMenuPage() {
+  const [menus, setMenus] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [divisions, setDivisions] = useState([]);
+  const [isLoadingMenus, setIsLoadingMenus] = useState(false);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [isLoadingDivisions, setIsLoadingDivisions] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formMode, setFormMode] = useState(null); // "create" | "edit" | null
+  const [formState, setFormState] = useState(createDefaultFormState);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-    // Function to fetch data when the "Tampilkan" button is clicked
-    const fetchData = async () => {
-        try {
-            let url = "http://localhost:3000/api/pending-progress?";
-            if (region !== "All") url += `region=${region}&`;
-            if (area !== "All") url += `area=${area}&`;
-            if (startDate) url += `startDate=${startDate}&`;
-            if (endDate) url += `endDate=${endDate}`;
+  const resetForm = useCallback(() => {
+    setFormState(createDefaultFormState());
+    setFormMode(null);
+    setIsSubmitting(false);
+    setIsModalOpen(false);
+  }, []);
 
-            const response = await fetch(url);
-            const result = await response.json();
-            if (result.success) {
-                setChartData(result.data); // Update chartData with fetched data
-            }
-        } catch (error) {
-            console.error("Error fetching data: ", error);
-        }
-    };
+  const fetchGroups = useCallback(async () => {
+    setIsLoadingGroups(true);
+    try {
+      const res = await fetch("/api/groups");
+      const json = await res.json();
+      const data = Array.isArray(json?.data) ? json.data : [];
+      const normalized = data.map((group) => ({
+        id: (group.ID ?? group.id ?? "").toString(),
+        name: group.NAME ?? group.name ?? "",
+        description: group.DESCRIPTION ?? group.description ?? "",
+      }));
+      setGroups(normalized);
+    } catch (error) {
+      console.error("Gagal memuat data group:", error);
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  }, []);
 
-    useEffect(() => {
-        // Create chart after data is fetched
-        if (chartData.length === 0) return; // Don't create chart if no data
+  const fetchDivisions = useCallback(async () => {
+    setIsLoadingDivisions(true);
+    try {
+      const res = await fetch("/api/divisi");
+      const json = await res.json();
+      const data = Array.isArray(json?.data) ? json.data : [];
+      const normalized = data.map((division) => ({
+        id: (division.ID_DIVISI ?? division.id ?? "").toString(),
+        code: (division.KODE_DIVISI ?? division.kode ?? "").toString(),
+        name: division.NAMA_DIVISI ?? division.name ?? "",
+      }));
+      setDivisions(normalized);
+    } catch (error) {
+      console.error("Gagal memuat data divisi:", error);
+    } finally {
+      setIsLoadingDivisions(false);
+    }
+  }, []);
 
-        let chart = am4core.create("chartdiv", am4charts.XYChart);
-        chartRef.current = chart;
-        chart.paddingRight = 20;
-        chart.data = chartData; // Use fetched data for the chart
+  const fetchMenus = useCallback(async () => {
+    setIsLoadingMenus(true);
+    try {
+      const res = await fetch("/api/menu-permissions");
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json?.error || "Gagal memuat menu");
+      }
+      const data = Array.isArray(json?.data) ? json.data : [];
+      const normalized = data.map((item) => {
+        const allowAllSource =
+          item.allowAll ?? item.ALLOW_ALL ?? item.allow_all ?? 0;
+        const allowAll =
+          allowAllSource === true ||
+          allowAllSource === "true" ||
+          Number(allowAllSource) === 1;
 
-        let categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
-        categoryAxis.dataFields.category = "category";
-        categoryAxis.renderer.grid.template.location = 0;
-        categoryAxis.renderer.minGridDistance = 20;
-        categoryAxis.renderer.labels.template.rotation = -45;
-        categoryAxis.renderer.cellStartLocation = 0.2;
-        categoryAxis.renderer.cellEndLocation = 0.8;
+        const allowAnonymousSource =
+          item.allowAnonymous ??
+          item.ALLOW_ANONYMOUS ??
+          item.allow_anonymous ??
+          0;
+        const allowAnonymous =
+          allowAnonymousSource === true ||
+          allowAnonymousSource === "true" ||
+          Number(allowAnonymousSource) === 1;
 
-        let valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-        valueAxis.renderer.labels.template.fontSize = 12;
-        valueAxis.renderer.minWidth = 50;
-
-        // Set a max value for the valueAxis to avoid cut-off values
-        valueAxis.max = Math.max(...chart.data.map(d => Math.max(d.IN, d.LAST))) * 1.1;
-
-        const createSeries = (field, name, color) => {
-            let series = chart.series.push(new am4charts.ColumnSeries());
-            series.dataFields.valueY = field;
-            series.dataFields.categoryX = "category";
-            series.name = name;
-            series.columns.template.fill = color;
-            series.columns.template.strokeWidth = 0;
-            series.columns.template.width = am4core.percent(50);
-
-            let labelBullet = series.bullets.push(new am4charts.LabelBullet());
-            labelBullet.label.text = "{valueY}";
-            labelBullet.label.dy = -10;
-            labelBullet.label.fontSize = 12;
-            labelBullet.label.fontWeight = "bold";
-            labelBullet.label.truncate = false;
-            labelBullet.label.wrap = false;
-            labelBullet.label.hideOversized = false;
-
-            // Enable zoom functionality
-            chart.cursor = new am4charts.XYCursor();
-            chart.cursor.behavior = "zoomX";
+        return {
+          id: item.id ?? item.ID,
+          urlPath: item.urlPath ?? item.URL_PATH ?? "",
+          allowAll,
+          allowAnonymous,
+          groupIds: Array.isArray(item.groupIds)
+            ? item.groupIds.map((value) => value.toString())
+            : [],
+          groups: Array.isArray(item.groups)
+            ? item.groups.map((group) => ({
+                id: (group.id ?? group.ID ?? "").toString(),
+                name: group.name ?? group.NAME ?? "",
+              }))
+            : [],
+          divisionIds: Array.isArray(item.divisionIds)
+            ? item.divisionIds.map((value) => value.toString())
+            : [],
+          divisions: Array.isArray(item.divisions)
+            ? item.divisions.map((division) => ({
+                id: (division.id ?? division.ID ?? "").toString(),
+                name: division.name ?? division.NAME ?? "",
+              }))
+            : [],
+          createdAt: item.createdAt ?? item.CREATED_AT ?? null,
+          updatedAt: item.updatedAt ?? item.UPDATED_AT ?? null,
         };
+      });
+      setMenus(normalized);
+    } catch (error) {
+      console.error("Gagal memuat menu permissions:", error);
+    } finally {
+      setIsLoadingMenus(false);
+    }
+  }, []);
 
-        createSeries("IN", "IN", am4core.color("#007fff"));
-        createSeries("LAST", "LAST", am4core.color("#dc3545"));
+  useEffect(() => {
+    fetchGroups();
+    fetchDivisions();
+    fetchMenus();
+  }, [fetchGroups, fetchDivisions, fetchMenus]);
 
-        return () => {
-            chart.dispose();
-        };
-    }, [chartData]); // Re-render chart whenever chartData changes
+  useEffect(() => {
+    if (!isModalOpen) return;
 
-    // Call fetchData only when the "Tampilkan" button is clicked
-    const handleButtonClick = () => {
-        setIsButtonClicked(true);
-        fetchData();
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        resetForm();
+      }
     };
 
-    // Function to export chart data as Excel
-    const exportToExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(chartData); // Convert data to worksheet
-        const wb = XLSX.utils.book_new(); // Create a new workbook
-        XLSX.utils.book_append_sheet(wb, ws, "Pending Data"); // Append worksheet to workbook
-        XLSX.writeFile(wb, "Pending_Progress_Data.xlsx"); // Write file as Excel
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen, resetForm]);
+
+  const filteredMenus = useMemo(() => {
+    if (!searchTerm) return menus;
+    const term = searchTerm.toLowerCase();
+    return menus.filter((menu) => {
+      const groupNames = menu.groups.map((group) => group.name).join(" ");
+      const divisionNames = menu.divisions.map((division) => division.name).join(" ");
+      const combined = `${menu.urlPath} ${groupNames} ${divisionNames}`;
+      return combined.toLowerCase().includes(term);
+    });
+  }, [menus, searchTerm]);
+
+  const openCreateForm = () => {
+    setFormState(createDefaultFormState());
+    setFormMode("create");
+    setIsSubmitting(false);
+    setIsModalOpen(true);
+  };
+
+  const openEditForm = (menu) => {
+    setFormState({
+      id: menu.id,
+      urlPath: menu.urlPath,
+      allowAll: menu.allowAll ? "1" : "0",
+      allowAnonymous: menu.allowAnonymous ? "1" : "0",
+      groupIds: Array.isArray(menu.groupIds) ? [...menu.groupIds] : [],
+      divisionIds: Array.isArray(menu.divisionIds) ? [...menu.divisionIds] : [],
+    });
+    setFormMode("edit");
+    setIsSubmitting(false);
+    setIsModalOpen(true);
+  };
+
+  const handleGroupToggle = (groupId) => {
+    setFormState((prev) => {
+      const exists = prev.groupIds.includes(groupId);
+      const groupIds = exists
+        ? prev.groupIds.filter((id) => id !== groupId)
+        : [...prev.groupIds, groupId];
+      return {
+        ...prev,
+        groupIds,
+      };
+    });
+  };
+
+  const handleDivisionToggle = (divisionId) => {
+    setFormState((prev) => {
+      const exists = prev.divisionIds.includes(divisionId);
+      const divisionIds = exists
+        ? prev.divisionIds.filter((id) => id !== divisionId)
+        : [...prev.divisionIds, divisionId];
+      return {
+        ...prev,
+        divisionIds,
+      };
+    });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    const payload = {
+      urlPath: formState.urlPath.trim(),
+      allowAll: formState.allowAll,
+      allowAnonymous: formState.allowAnonymous,
+      groupIds:
+        formState.allowAll === "1" || formState.allowAnonymous === "1"
+          ? []
+          : formState.groupIds,
+      divisionIds:
+        formState.allowAll === "1" || formState.allowAnonymous === "1"
+          ? []
+          : formState.divisionIds,
     };
 
-    return (
-        <div className="p-6 bg-gray-100 min-h-screen">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-semibold mb-4">Dashboard Daily In Progress & Pending</h2>
+    const url =
+      formMode === "edit"
+        ? `/api/menu-permissions/${formState.id}`
+        : "/api/menu-permissions";
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-end">
-                    <div>
-                        <label className="block text-sm font-medium">Pilih Region</label>
-                        <select className="w-full p-2 border rounded" value={region} onChange={(e) => setRegion(e.target.value)}>
-                            <option>All</option>
-                            <option>Region 1</option>
-                            <option>Region 2</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Pilih Area</label>
-                        <select className="w-full p-2 border rounded" value={area} onChange={(e) => setArea(e.target.value)}>
-                            <option>All</option>
-                            <option>Area 1</option>
-                            <option>Area 2</option>
-                        </select>
-                    </div>
-                    <button
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                        onClick={handleButtonClick} // Trigger data fetching on button click
-                    >
-                        Tampilkan
-                    </button>
-                </div>
+    const method = formMode === "edit" ? "PUT" : "POST";
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 items-end">
-                    <div>
-                        <label className="block text-sm font-medium">Mulai Dari</label>
-                        <input type="date" className="w-full p-2 border rounded" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium">Sampai Dengan</label>
-                        <input type="date" className="w-full p-2 border rounded" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                    </div>
-                    <button
-                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                        onClick={exportToExcel} // Trigger export to Excel
-                    >
-                        Download Data WISE
-                    </button>
-                </div>
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-                <div className="w-full">
-                    <div id="chartdiv" className="w-full h-96"></div>
-                </div>
+      const json = await res.json();
 
-                <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mt-6">
-                    <div className="p-4 bg-green-300 rounded text-center">Cair (Hari ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-green-600 rounded text-center">Cair (Bulan ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-red-100 rounded text-center">Cancel (Hari ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-red-300 rounded text-center">Cancel (Bulan ini): <span className="font-semibold">15</span></div>
-                    <div className="p-4 bg-red-400 rounded text-center">Reject (Hari ini): <span className="font-semibold">429</span></div>
-                    <div className="p-4 bg-red-600 rounded text-center">Reject (Bulan ini): <span className="font-semibold">39</span></div>
-                    <div className="p-4 bg-gray-300 rounded text-center">Hold (Bulan ini): <span className="font-semibold">55</span></div>
-                </div>
-            </div>
-        </div>
+      if (!res.ok) {
+        throw new Error(json?.error || "Gagal menyimpan menu");
+      }
+
+      await fetchMenus();
+      alert("Menu berhasil disimpan");
+      resetForm();
+    } catch (error) {
+      console.error("Gagal menyimpan menu:", error);
+      alert(error.message || "Gagal menyimpan menu");
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (menu) => {
+    const confirmed = confirm(
+      `Yakin ingin menghapus menu "${menu.urlPath}"? Tindakan ini tidak dapat dibatalkan.`
     );
-};
 
-export default PendingProgress;
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/menu-permissions/${menu.id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json?.error || "Gagal menghapus menu");
+      }
+      await fetchMenus();
+      alert("Menu berhasil dihapus");
+      if (formMode === "edit" && formState.id === menu.id) {
+        resetForm();
+      }
+    } catch (error) {
+      console.error("Gagal menghapus menu:", error);
+      alert(error.message || "Gagal menghapus menu");
+    }
+  };
+
+  const renderGroupsBadge = (menu) => {
+    const badges = [];
+
+    if (menu.allowAnonymous) {
+      badges.push(
+        <span
+          key="public"
+          className="rounded bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700"
+        >
+          Public
+        </span>
+      );
+    }
+
+    if (menu.allowAll && !menu.allowAnonymous) {
+      badges.push(
+        <span
+          key="allowAll"
+          className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-700"
+        >
+          Allow All
+        </span>
+      );
+    }
+
+    if (!menu.allowAll && !menu.allowAnonymous) {
+      if (menu.groups.length > 0) {
+        badges.push(
+          ...menu.groups.map((group) => (
+            <span
+              key={`g-${group.id}`}
+              className="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700"
+            >
+              {group.name || `Group ${group.id}`}
+            </span>
+          ))
+        );
+      }
+
+      if (menu.divisions.length > 0) {
+        badges.push(
+          ...menu.divisions.map((division) => (
+            <span
+              key={`d-${division.id}`}
+              className="rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700"
+            >
+              {division.name || `Divisi ${division.id}`}
+            </span>
+          ))
+        );
+      }
+    }
+
+    if (badges.length === 0) {
+      return (
+        <span className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">
+          Tidak ada pembatasan
+        </span>
+      );
+    }
+
+    return <div className="flex flex-wrap gap-1">{badges}</div>;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div className="rounded-lg bg-white p-6 shadow">
+          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-800">
+                Manajemen Menu
+              </h1>
+              <p className="text-sm text-gray-500">
+                Kelola akses URL berdasarkan group pengguna.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+              <input
+                type="text"
+                className="w-full rounded border px-3 py-2 md:w-64"
+                placeholder="Cari menu atau group..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+              <button
+                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                onClick={openCreateForm}
+              >
+                + Tambah Menu
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto border border-gray-200 text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="border px-4 py-2 text-left">URL Path</th>
+                  <th className="border px-4 py-2 text-left">Akses</th>
+                  <th className="border px-4 py-2 text-left">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoadingMenus ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="border px-4 py-6 text-center text-gray-500"
+                    >
+                      Memuat data menu...
+                    </td>
+                  </tr>
+                ) : filteredMenus.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="border px-4 py-6 text-center text-gray-500"
+                    >
+                      Tidak ada data menu.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredMenus.map((menu) => (
+                    <tr key={menu.id} className="hover:bg-gray-50">
+                      <td className="border px-4 py-2 font-medium text-gray-700">
+                        {menu.urlPath}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {renderGroupsBadge(menu)}
+                      </td>
+                      <td className="border px-4 py-2">
+                        <div className="flex gap-2">
+                          <button
+                            className="rounded bg-yellow-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yellow-600"
+                            onClick={() => openEditForm(menu)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="rounded bg-red-500 px-3 py-1 text-xs font-semibold text-white hover:bg-red-600"
+                            onClick={() => handleDelete(menu)}
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {isModalOpen && formMode && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={resetForm}
+        >
+          <div
+            className="relative w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="menu-form-title"
+          >
+            <form onSubmit={handleSubmit}>
+              <div className="flex items-start justify-between border-b px-6 py-4">
+                <div>
+                  <h2
+                    id="menu-form-title"
+                    className="text-lg font-semibold text-gray-800"
+                  >
+                    {formMode === "create" ? "Tambah Menu" : "Ubah Menu"}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Tentukan URL path dan group yang memiliki akses.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="rounded p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  onClick={resetForm}
+                  aria-label="Tutup modal"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      URL Path
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full rounded border px-3 py-2"
+                      value={formState.urlPath}
+                      onChange={(event) =>
+                        setFormState((prev) => ({
+                          ...prev,
+                          urlPath: event.target.value,
+                        }))
+                      }
+                      placeholder="/administrator/sample"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Mode Akses
+                    </label>
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+                      <label className="flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={formState.allowAll === "1"}
+                          onChange={(event) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              allowAll: event.target.checked ? "1" : "0",
+                              groupIds: event.target.checked
+                                ? []
+                                : prev.groupIds,
+                              divisionIds: event.target.checked
+                                ? []
+                                : prev.divisionIds,
+                            }))
+                          }
+                          disabled={formState.allowAnonymous === "1"}
+                        />
+                        <span>Semua pengguna login</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={formState.allowAnonymous === "1"}
+                          onChange={(event) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              allowAnonymous: event.target.checked ? "1" : "0",
+                              allowAll: event.target.checked ? "0" : prev.allowAll,
+                              groupIds: event.target.checked
+                                ? []
+                                : prev.groupIds,
+                              divisionIds: event.target.checked
+                                ? []
+                                : prev.divisionIds,
+                            }))
+                          }
+                        />
+                        <span>Akses tanpa login (publik)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">
+                        Akses Group
+                      </label>
+                      {formState.allowAll === "1" && (
+                        <span className="text-xs text-gray-500">
+                          Allow All aktif, group tidak diperlukan.
+                        </span>
+                      )}
+                      {formState.allowAnonymous === "1" && (
+                        <span className="text-xs text-gray-500">
+                          Mode publik aktif, pembatasan diabaikan.
+                        </span>
+                      )}
+                    </div>
+
+                    {isLoadingGroups ? (
+                      <p className="rounded border border-dashed px-3 py-2 text-sm text-gray-500">
+                        Memuat data group...
+                      </p>
+                    ) : groups.length === 0 ? (
+                      <p className="rounded border border-dashed px-3 py-2 text-sm text-gray-500">
+                        Tidak ada data group tersedia.
+                      </p>
+                    ) : (
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {groups.map((group) => {
+                          const checked = formState.groupIds.includes(group.id);
+                          return (
+                            <label
+                              key={group.id}
+                              className={`flex cursor-pointer items-start gap-2 rounded border px-3 py-2 text-sm ${
+                                checked
+                                  ? "border-blue-500 bg-blue-50"
+                                  : "border-gray-200"
+                              } ${
+                                formState.allowAll === "1" ||
+                                formState.allowAnonymous === "1"
+                                  ? "cursor-not-allowed opacity-60"
+                                  : ""
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="mt-1"
+                                checked={checked}
+                                disabled={
+                                  formState.allowAll === "1" ||
+                                  formState.allowAnonymous === "1"
+                                }
+                                onChange={() => handleGroupToggle(group.id)}
+                              />
+                              <span>
+                                <span className="font-medium text-gray-700">
+                                  {group.name || `Group ${group.id}`}
+                                </span>
+                                {group.description && (
+                                  <p className="text-xs text-gray-500">
+                                    {group.description}
+                                  </p>
+                                )}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">
+                        Akses Divisi
+                      </label>
+                      {formState.allowAll === "1" && (
+                        <span className="text-xs text-gray-500">
+                          Allow All aktif, divisi tidak diperlukan.
+                        </span>
+                      )}
+                      {formState.allowAnonymous === "1" && (
+                        <span className="text-xs text-gray-500">
+                          Mode publik aktif, pembatasan diabaikan.
+                        </span>
+                      )}
+                    </div>
+
+                    {isLoadingDivisions ? (
+                      <p className="rounded border border-dashed px-3 py-2 text-sm text-gray-500">
+                        Memuat data divisi...
+                      </p>
+                    ) : divisions.length === 0 ? (
+                      <p className="rounded border border-dashed px-3 py-2 text-sm text-gray-500">
+                        Tidak ada data divisi tersedia.
+                      </p>
+                    ) : (
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {divisions.map((division) => {
+                          const checked = formState.divisionIds.includes(
+                            division.id
+                          );
+                          return (
+                            <label
+                              key={division.id}
+                              className={`flex cursor-pointer items-start gap-2 rounded border px-3 py-2 text-sm ${
+                                checked
+                                  ? "border-purple-500 bg-purple-50"
+                                  : "border-gray-200"
+                              } ${
+                                formState.allowAll === "1" ||
+                                formState.allowAnonymous === "1"
+                                  ? "cursor-not-allowed opacity-60"
+                                  : ""
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="mt-1"
+                                checked={checked}
+                                disabled={
+                                  formState.allowAll === "1" ||
+                                  formState.allowAnonymous === "1"
+                                }
+                                onChange={() => handleDivisionToggle(division.id)}
+                              />
+                              <span>
+                                <span className="font-medium text-gray-700">
+                                  {division.name || `Divisi ${division.id}`}
+                                </span>
+                                {division.code && (
+                                  <p className="text-xs text-gray-500">
+                                    {division.code}
+                                  </p>
+                                )}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {formState.allowAll === "0" &&
+                    formState.allowAnonymous === "0" &&
+                    formState.groupIds.length === 0 &&
+                    formState.divisionIds.length === 0 && (
+                      <p className="text-xs text-red-500">
+                        Pilih minimal satu group atau divisi, atau aktifkan
+                        akses bebas.
+                      </p>
+                    )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t px-6 py-4">
+                <button
+                  type="button"
+                  className="rounded border px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  onClick={resetForm}
+                  disabled={isSubmitting}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                  disabled={
+                    isSubmitting ||
+                    !formState.urlPath.trim() ||
+                    (formState.allowAll === "0" &&
+                      formState.allowAnonymous === "0" &&
+                      formState.groupIds.length === 0 &&
+                      formState.divisionIds.length === 0)
+                  }
+                >
+                  {isSubmitting ? "Menyimpan..." : "Simpan Menu"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

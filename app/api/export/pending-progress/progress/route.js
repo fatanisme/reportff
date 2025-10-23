@@ -34,7 +34,7 @@ export async function GET(req) {
 
     const query = `
         BEGIN
-        pending_progress_progress(
+        ILOS.pending_progress_progress(
             :p_tgll,
             :p_tgl_wise,
             :p_kode_region,

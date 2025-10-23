@@ -5,13 +5,13 @@ import oracledb from "oracledb";
 export async function GET(req) {
 
   try {
-    const kodeArea = req.nextUrl.searchParams.get("kode_area");
-    const kodeRegion = req.nextUrl.searchParams.get("kode_region");
+    const kodeArea = req.nextUrl.searchParams.get("kode_area") || "All";
+    const kodeRegion = req.nextUrl.searchParams.get("kode_region") || "All";
     const startDate = req.nextUrl.searchParams.get("startDate");
     const endDate = req.nextUrl.searchParams.get("endDate");
 
-    const tgl_awal = startDate.replace(/-/g, '');
-    const tgl_akhir = endDate.replace(/-/g, '');
+    const tgl_awal = startDate ? startDate.replace(/-/g, '') : null;
+    const tgl_akhir = endDate ? endDate.replace(/-/g, '') : null;
 
 
     let ro_se = kodeRegion == 'All' ? 'All' : kodeRegion;
@@ -19,7 +19,7 @@ export async function GET(req) {
 
     const query = `
         BEGIN
-        griya_pending_progress_export(
+        ILOS.griya_pending_progress_export(
             :p_tglawal,
             :p_tglakhir,
             :p_kode_region,
@@ -30,8 +30,8 @@ export async function GET(req) {
     `;
 
     const binds = {
-      p_tglawal: tgl_awal,
-      p_tglakhir: tgl_akhir,
+      p_tglawal: { val: tgl_awal, type: oracledb.STRING },
+      p_tglakhir: { val: tgl_akhir, type: oracledb.STRING },
       p_kode_region: ro_se,
       p_kode_area: ar_se,
       p_cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR }
@@ -50,3 +50,5 @@ export async function GET(req) {
     );
   }
 }
+
+export const dynamic = 'force-dynamic';

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { executeQuery } from "@/lib/oracle";
 
-// GET group by ID (tambahkan ROLE ke SELECT)
+// GET group by ID
 export async function GET(request, { params }) {
-  const { id } = await params;
+  const { id } = params;
 
   const query = `
     SELECT ID, NAME, DESCRIPTION
@@ -28,11 +28,21 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT update group (tambahkan ROLE ke query dan body)
+// PUT update group
 export async function PUT(request, context) {
   const { params } = context;
   const { name, description } = await request.json();
   const id = params.id;
+
+  const trimmedName = name?.trim();
+  const trimmedDescription = description?.trim();
+
+  if (!trimmedName || !trimmedDescription) {
+    return NextResponse.json(
+      { error: "Nama dan deskripsi wajib diisi" },
+      { status: 400 }
+    );
+  }
 
   const query = `
     UPDATE REPORTFF.GROUPS
@@ -42,7 +52,11 @@ export async function PUT(request, context) {
   `;
 
   try {
-    await executeQuery(query, { id, name, email, role });
+    await executeQuery(query, {
+      id,
+      name: trimmedName,
+      description: trimmedDescription,
+    });
     return NextResponse.json({ message: "Group berhasil diupdate" });
   } catch (error) {
     console.error("Gagal update group:", error);

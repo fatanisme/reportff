@@ -20,7 +20,7 @@ const PendingProgress = () => {
     // Function to fetch data when the "Tampilkan" button is clicked
     const fetchData = async () => {
         try {
-            let url = "http://localhost:3000/api/pending-progress?";
+            let url = "/api/pending-progress?";
             if (region !== "All") url += `region=${region}&`;
             if (area !== "All") url += `area=${area}&`;
             if (startDate) url += `startDate=${startDate}&`;
