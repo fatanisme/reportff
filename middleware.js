@@ -6,6 +6,10 @@ const AUTH_PREFIX = "/auth";
 const AUTH_API_PREFIX = "/api/auth";
 const UNAUTHORIZED_PATH = "/unauthorized";
 const CACHE_BYPASS_HEADER = "x-page-permission-cache";
+const PERMISSION_CACHE_SYMBOL = Symbol.for(
+  "reportff.middlewarePermissionCache"
+);
+const PERMISSION_CACHE_TTL_MS = 60 * 1000;
 
 const normalizePath = (value) => {
   if (!value) return "/";
@@ -41,7 +45,39 @@ const hasIntersection = (source = [], target = []) => {
   return source.some((item) => targetSet.has(String(item)));
 };
 
+const getPermissionCacheStore = () => {
+  if (!globalThis[PERMISSION_CACHE_SYMBOL]) {
+    globalThis[PERMISSION_CACHE_SYMBOL] = new Map();
+  }
+  return globalThis[PERMISSION_CACHE_SYMBOL];
+};
+
+const readPermissionCache = (path) => {
+  const store = getPermissionCacheStore();
+  const key = normalizePath(path);
+  const entry = store.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    store.delete(key);
+    return undefined;
+  }
+  return entry.value;
+};
+
+const writePermissionCache = (path, value) => {
+  const store = getPermissionCacheStore();
+  store.set(normalizePath(path), {
+    value,
+    expiresAt: Date.now() + PERMISSION_CACHE_TTL_MS,
+  });
+};
+
 const fetchPermission = async (origin, path) => {
+  const cached = readPermissionCache(path);
+  if (cached !== undefined) {
+    return cached;
+  }
+
   const url = new URL("/api/page-permissions/check", origin);
   url.searchParams.set("path", path);
 
@@ -54,9 +90,12 @@ const fetchPermission = async (origin, path) => {
     });
     if (!res.ok) return null;
     const json = await res.json();
-    return json?.data ?? null;
+    const value = json?.data ?? null;
+    writePermissionCache(path, value);
+    return value;
   } catch (error) {
     console.error("middleware: gagal memuat konfigurasi akses", error);
+    writePermissionCache(path, null);
     return null;
   }
 };
@@ -75,7 +114,13 @@ export async function middleware(req) {
   const isAuthApiRoute = pathname.startsWith(AUTH_API_PREFIX);
   const isLoginRoute = normalizedPath === normalizePath(LOGIN_PATH);
 
-  const permission = await fetchPermission(nextUrl.origin, pathname);
+  let permission = null;
+  const skipPermissionCheck =
+    isAuthRoute || normalizedPath === normalizePath(UNAUTHORIZED_PATH);
+
+  if (!skipPermissionCheck) {
+    permission = await fetchPermission(nextUrl.origin, pathname);
+  }
 
   const token = await getToken({ req });
 

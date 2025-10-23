@@ -9,6 +9,7 @@ export default function LoginPage() {
     const [emailLocalPart, setEmailLocalPart] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter(); // Menggunakan useRouter dari next/navigation
     const { data: session } = useSession();
     useEffect(() => {
@@ -21,17 +22,24 @@ export default function LoginPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const email = `${emailLocalPart.trim().toLowerCase()}${EMAIL_DOMAIN}`;
-        const result = await signIn("credentials", {
-            redirect: false,
-            email,
-            password,
-        });
+        setIsSubmitting(true);
+        setError("");
+        try {
+            const result = await signIn("credentials", {
+                redirect: false,
+                email,
+                password,
+            });
 
-        if (result?.error) {
-            setError("Email atau password salah.");
-        } else {
-            // Redirect setelah login berhasil menggunakan useRouter
-            router.push("/"); // Navigasi ke dashboard atau halaman tujuan
+            if (result?.error) {
+                setError("Email atau password salah.");
+                setIsSubmitting(false);
+            } else {
+                router.push("/");
+            }
+        } catch (err) {
+            setError("Terjadi kesalahan, silakan coba lagi.");
+            setIsSubmitting(false);
         }
     };
 
@@ -79,8 +87,9 @@ export default function LoginPage() {
                 <button
                     type="submit"
                     className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition"
+                    disabled={isSubmitting}
                 >
-                    Login
+                    {isSubmitting ? "Memproses..." : "Login"}
                 </button>
             </form>
         </div>

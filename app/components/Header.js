@@ -3,9 +3,19 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import {
+  MENU_SECTIONS,
+  STANDALONE_LINKS,
+  normalizeMenuPath,
+} from "@/lib/menu-config";
+
+const PUBLIC_SECTION_KEYS = ["grafik", "productivity", "report", "griya"];
+const ADMIN_SECTION_KEY = "administrator";
+const INQUIRY_LINK_KEY = "inquiry-aplikasi";
 
 const Header = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [allowedPaths, setAllowedPaths] = useState(null);
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -18,6 +28,54 @@ const Header = () => {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (status === "loading") {
+      setAllowedPaths(null);
+      return;
+    }
+
+    let isActive = true;
+    const controller = new AbortController();
+
+    const loadAllowed = async () => {
+      try {
+        setAllowedPaths(null);
+        const res = await fetch("/api/menu-permissions/allowed", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const json = await res.json();
+        if (!isActive) return;
+
+        if (Array.isArray(json?.data)) {
+          const normalized = json.data
+            .map((item) => item?.normalizedPath ?? item?.urlPath)
+            .filter(Boolean)
+            .map((path) => normalizeMenuPath(path));
+          setAllowedPaths(new Set(normalized));
+        } else {
+          setAllowedPaths(new Set());
+        }
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        console.error("Gagal memuat menu izin:", error);
+        if (isActive) {
+          setAllowedPaths(null);
+        }
+      }
+    };
+
+    loadAllowed();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [status, session?.user?.id]);
 
   if (status === "loading") {
     return (
@@ -36,6 +94,28 @@ const Header = () => {
     setOpenDropdown(openDropdown === menu ? null : menu);
   };
 
+  const allowedSet =
+    allowedPaths && allowedPaths instanceof Set ? allowedPaths : null;
+
+  const filterItems = (items) => {
+    if (!allowedSet) return items;
+    return items.filter((item) => allowedSet.has(item.normalizedPath));
+  };
+
+  const publicSections = MENU_SECTIONS.filter((section) =>
+    PUBLIC_SECTION_KEYS.includes(section.key)
+  );
+  const adminSection = MENU_SECTIONS.find(
+    (section) => section.key === ADMIN_SECTION_KEY
+  );
+  const inquiryLink = STANDALONE_LINKS.find(
+    (link) => link.key === INQUIRY_LINK_KEY
+  );
+  const showInquiryButton =
+    !inquiryLink ||
+    allowedSet === null ||
+    allowedSet.has(inquiryLink.normalizedPath);
+
   return (
     <header className="bg-blue-700 text-white h-12 flex items-center justify-between px-6 fixed top-0 w-full shadow-md z-50">
       <h1
@@ -48,64 +128,30 @@ const Header = () => {
       {!session ? (
         <>
           <div className="flex space-x-6 items-center text-sm mx-auto">
-            <Dropdown
-              title="Grafik"
-              isOpen={openDropdown === "grafik"}
-              toggle={() => toggleDropdown("grafik")}
-              items={[
-                "Akumulasi Realtime",
-                "Pending & Progress",
-                "Monitoring iDeb",
-                "Trend Hold Aplikasi",
-                "Trend Aplikasi Masuk",
-                "Trend Nominal Pencairan",
-                "Trend Pencairan",
-              ]}
-              category="grafik"
-              router={router}
-            />
-            <Dropdown
-              title="Productivity"
-              isOpen={openDropdown === "productivity"}
-              toggle={() => toggleDropdown("productivity")}
-              items={["Realisasi SLA FF", "Pipeline FF"]}
-              category="productivity"
-              router={router}
-            />
-            <Dropdown
-              title="Report"
-              isOpen={openDropdown === "report"}
-              toggle={() => toggleDropdown("report")}
-              items={[
-                "Report LD Pencairan",
-                "Report Per Period",
-                "Grafik Alasan Cancel Reject",
-              ]}
-              category="report"
-              router={router}
-            />
-            <Dropdown
-              title="Griya"
-              isOpen={openDropdown === "griya"}
-              toggle={() => toggleDropdown("griya")}
-              items={[
-                "Pipeline Griya",
-                "Report Griya",
-                "Report SLA Griya",
-                "Master PKS Griya",
-                "Pending Progress Griya",
-              ]}
-              category="griya"
-              alignRight
-              router={router}
-            />
+            {publicSections.map((section) => {
+              const visibleItems = filterItems(section.items);
+              if (visibleItems.length === 0) return null;
+              return (
+                <Dropdown
+                  key={section.key}
+                  title={section.title}
+                  isOpen={openDropdown === section.key}
+                  toggle={() => toggleDropdown(section.key)}
+                  items={visibleItems}
+                  alignRight={section.alignRight}
+                  router={router}
+                />
+              );
+            })}
 
-            <button
-              className="hover:bg-blue-800 text-white px-4 py-2 rounded text-sm"
-              onClick={() => router.push("/inquiry-aplikasi")}
-            >
-              Inquiry Aplikasi
-            </button>
+            {showInquiryButton && inquiryLink && (
+              <button
+                className="hover:bg-blue-800 text-white px-4 py-2 rounded text-sm"
+                onClick={() => router.push(inquiryLink.path)}
+              >
+                {inquiryLink.label}
+              </button>
+            )}
           </div>
           <button
             className="bg-gray-800 hover:bg-gray-900 text-white text-sm px-4 py-2 rounded"
@@ -116,25 +162,16 @@ const Header = () => {
         </>
       ) : (
         <>
-          <Dropdown
-            title="Administrator"
-            isOpen={openDropdown === "administrator"}
-            toggle={() => toggleDropdown("administrator")}
-            items={[
-              "Users",
-              "Groups",
-              "Divisi",
-              "Master Parameter",
-              "Maintenance RO (Area)",
-              "Monitoring Helpdesk",
-              "Monitoring Akses IP Address",
-              "Manajemen Menu",
-              "IT Helpdesk Task",
-              "File Finder (Logs View)",
-            ]}
-            category="administrator"
-            router={router}
-          />
+          {adminSection && (
+            <Dropdown
+              title={adminSection.title}
+              isOpen={openDropdown === adminSection.key}
+              toggle={() => toggleDropdown(adminSection.key)}
+              items={filterItems(adminSection.items)}
+              alignRight={adminSection.alignRight}
+              router={router}
+            />
+          )}
           <button
             className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded"
             onClick={() => signOut()}
@@ -147,43 +184,50 @@ const Header = () => {
   );
 };
 
-const Dropdown = ({ title, isOpen, toggle, items, category, alignRight, router }) => (
-  <div className="relative dropdown-container">
-    <button onClick={toggle} className="hover:bg-blue-600 px-4 py-2 rounded">
-      {title} ▼
-    </button>
-    {isOpen && (
-      <div
-        className={`absolute mt-2 w-56 bg-white text-black rounded shadow-lg max-h-64 overflow-auto ${
-          alignRight ? "right-0" : "left-0"
-        }`}
-      >
-        {items.map((item, index) => (
-          <DropdownItem
-            key={index}
-            text={item}
-            category={category}
-            router={router}
-            toggleDropdown={toggle}
-          />
-        ))}
-      </div>
-    )}
-  </div>
-);
+const Dropdown = ({ title, isOpen, toggle, items, alignRight, router }) => {
+  if (!items || items.length === 0) {
+    return null;
+  }
 
-const DropdownItem = ({ text, category, router, toggleDropdown }) => {
-  const formattedPath = `/${category}/${text.toLowerCase().replace(/\s+/g, "-")}`;
   return (
-    <a
-      onClick={() => {
-        router.push(formattedPath);
-        toggleDropdown();
-      }}
-      className="block px-4 py-2 hover:bg-gray-200 cursor-pointer"
+    <div className="relative dropdown-container">
+      <button onClick={toggle} className="hover:bg-blue-600 px-4 py-2 rounded">
+        {title} ▼
+      </button>
+      {isOpen && (
+        <div
+          className={`absolute mt-2 w-56 bg-white text-black rounded shadow-lg max-h-64 overflow-auto ${
+            alignRight ? "right-0" : "left-0"
+          }`}
+        >
+          {items.map((item) => (
+            <DropdownItem
+              key={item.path}
+              item={item}
+              router={router}
+              toggleDropdown={toggle}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const DropdownItem = ({ item, router, toggleDropdown }) => {
+  const handleClick = () => {
+    router.push(item.path);
+    toggleDropdown();
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="block w-full px-4 py-2 text-left hover:bg-gray-200"
     >
-      {text}
-    </a>
+      {item.label}
+    </button>
   );
 };
 
