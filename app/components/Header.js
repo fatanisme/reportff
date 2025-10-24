@@ -16,8 +16,13 @@ const INQUIRY_LINK_KEY = "inquiry-aplikasi";
 const Header = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [allowedPaths, setAllowedPaths] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -77,17 +82,19 @@ const Header = () => {
     };
   }, [status, session?.user?.id]);
 
-  if (status === "loading") {
-    return (
-      <header className="bg-blue-700 text-white h-12 flex items-center justify-between px-6 fixed top-0 w-full shadow-md z-50">
-        <h1
-          className="text-sm font-bold cursor-pointer hover:opacity-80"
-          onClick={() => router.push("/")}
-        >
-          Monitoring FF BSI - GRIYA
-        </h1>
-      </header>
-    );
+  const renderFallbackHeader = () => (
+    <header className="bg-blue-700 text-white h-12 flex items-center justify-between px-6 fixed top-0 w-full shadow-md z-50">
+      <h1
+        className="text-white font-bold cursor-pointer hover:opacity-80"
+        onClick={() => router.push("/")}
+      >
+        Monitoring FF BSI
+      </h1>
+    </header>
+  );
+
+  if (!isMounted || status === "loading") {
+    return renderFallbackHeader();
   }
 
   const toggleDropdown = (menu) => {
@@ -119,10 +126,10 @@ const Header = () => {
   return (
     <header className="bg-blue-700 text-white h-12 flex items-center justify-between px-6 fixed top-0 w-full shadow-md z-50">
       <h1
-        className="text-sm font-bold cursor-pointer hover:opacity-80"
+        className="text-white font-bold cursor-pointer hover:opacity-80"
         onClick={() => router.push("/")}
       >
-        Monitoring FF BSI - GRIYA
+        Monitoring FF BSI
       </h1>
 
       {!session ? (
