@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const GroupsTable = () => {
   const [groups, setGroups] = useState([]);
@@ -8,6 +9,8 @@ const GroupsTable = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { success: notifySuccess, error: notifyError, confirm: confirmDialog } =
+    useNotification();
 
   const fetchGroups = async () => {
     try {
@@ -24,14 +27,27 @@ const GroupsTable = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!confirm("Yakin mau hapus group ini?")) return;
+    const confirmed = await confirmDialog({
+      title: "Hapus Group",
+      message: "Yakin mau hapus group ini? Tindakan ini tidak dapat dibatalkan.",
+      confirmText: "Ya, hapus",
+      cancelText: "Batal",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
-      await fetch(`/api/groups/${id}`, {
+      const res = await fetch(`/api/groups/${id}`, {
         method: "DELETE",
       });
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        throw new Error(result?.error || "Gagal menghapus group");
+      }
       setGroups((prev) => prev.filter((g) => g.ID !== id));
+      notifySuccess("Group berhasil dihapus");
     } catch (err) {
       console.error("Gagal hapus group:", err);
+      notifyError(err.message || "Gagal menghapus group");
     }
   };
 

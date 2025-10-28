@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const EMAIL_DOMAIN = "@bankbsi.co.id";
 
@@ -20,6 +21,7 @@ export default function EditUserPage() {
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { success: notifySuccess, error: notifyError } = useNotification();
 
   const handleBack = () => {
     window.location.href = "/administrator/users";
@@ -127,16 +129,16 @@ export default function EditUserPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        alert(result?.error || "Gagal update user");
+        notifyError(result?.error || "Gagal update user");
         setSaving(false);
         return;
       }
 
-      alert("User berhasil diupdate");
+      notifySuccess("User berhasil diupdate");
       window.location.href = "/administrator/users";
     } catch (err) {
       console.error("Gagal update user:", err);
-      alert("Terjadi kesalahan saat update user");
+      notifyError("Terjadi kesalahan saat update user");
       setSaving(false);
     }
   };

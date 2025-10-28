@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 export default function EditDivisiPage() {
   const { id } = useParams();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const { success: notifySuccess, error: notifyError } = useNotification();
 
   const handleBack = () => {
     window.location.href = "/administrator/divisi";
@@ -34,15 +36,19 @@ export default function EditDivisiPage() {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await fetch(`/api/divisi/${id}`, {
+      const response = await fetch(`/api/divisi/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, name, description }),
       });
-      alert("Divisi berhasil diupdate");
+      if (!response.ok) {
+        throw new Error("Gagal memperbarui divisi");
+      }
+      notifySuccess("Divisi berhasil diupdate");
       window.location.href = "/administrator/divisi";
     } catch (err) {
       console.error("Gagal update divisi:", err);
+      notifyError(err.message || "Gagal memperbarui divisi");
     }
   };
 

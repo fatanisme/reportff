@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const DivisisTable = () => {
   const [divisis, setDivisis] = useState([]);
@@ -8,6 +9,8 @@ const DivisisTable = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { success: notifySuccess, error: notifyError, confirm: confirmDialog } =
+    useNotification();
 
   const fetchDivisis = async () => {
       try {
@@ -24,14 +27,27 @@ const DivisisTable = () => {
     }, []);
 
   const handleDelete = async (id) => {
-    if (!confirm("Yakin mau hapus divisi ini?")) return;
+    const confirmed = await confirmDialog({
+      title: "Hapus Divisi",
+      message: "Yakin mau hapus divisi ini? Tindakan ini tidak dapat dibatalkan.",
+      confirmText: "Ya, hapus",
+      cancelText: "Batal",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
-      await fetch(`/api/divisi/${id}`, {
+      const res = await fetch(`/api/divisi/${id}`, {
         method: "DELETE",
       });
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        throw new Error(result?.error || "Gagal menghapus divisi");
+      }
       setDivisis((prev) => prev.filter((g) => g.ID_DIVISI !== id));
+      notifySuccess("Divisi berhasil dihapus");
     } catch (err) {
       console.error("Gagal hapus divisi:", err);
+      notifyError(err.message || "Gagal menghapus divisi");
     }
   };
 

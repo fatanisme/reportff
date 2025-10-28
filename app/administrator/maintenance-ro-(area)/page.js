@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const DivisisTable = () => {
   const [maintenances, setDivisis] = useState([]);
@@ -8,6 +9,8 @@ const DivisisTable = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { success: notifySuccess, error: notifyError, confirm: confirmDialog } =
+    useNotification();
 
   useEffect(() => {
     const fetchDivisis = async () => {
@@ -23,14 +26,27 @@ const DivisisTable = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!confirm("Yakin mau hapus maintenance ini?")) return;
+    const confirmed = await confirmDialog({
+      title: "Hapus Maintenance",
+      message: "Yakin mau hapus maintenance ini? Tindakan ini tidak dapat dibatalkan.",
+      confirmText: "Ya, hapus",
+      cancelText: "Batal",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
-      await fetch(`/api/maintenance/${id}`, {
+      const res = await fetch(`/api/maintenance/${id}`, {
         method: "DELETE",
       });
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        throw new Error(result?.error || "Gagal menghapus maintenance");
+      }
       setDivisis((prev) => prev.filter((g) => g.ID !== id));
+      notifySuccess("Maintenance berhasil dihapus");
     } catch (err) {
       console.error("Gagal hapus maintenance:", err);
+      notifyError(err.message || "Gagal menghapus maintenance");
     }
   };
 

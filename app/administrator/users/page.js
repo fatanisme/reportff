@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const UsersTable = () => {
   const [users, setUsers] = useState([]);
@@ -8,6 +9,8 @@ const UsersTable = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { success: notifySuccess, error: notifyError, confirm: confirmDialog } =
+    useNotification();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -23,14 +26,27 @@ const UsersTable = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!confirm("Yakin mau hapus user ini?")) return;
+    const confirmed = await confirmDialog({
+      title: "Hapus User",
+      message: "Yakin mau hapus user ini? Tindakan ini tidak dapat dibatalkan.",
+      confirmText: "Ya, hapus",
+      cancelText: "Batal",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
-      await fetch(`/api/users/${id}`, {
+      const res = await fetch(`/api/users/${id}`, {
         method: "DELETE",
       });
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        throw new Error(result?.error || "Gagal menghapus user");
+      }
       setUsers((prev) => prev.filter((u) => u.ID !== id));
+      notifySuccess("User berhasil dihapus");
     } catch (err) {
       console.error("Gagal hapus user:", err);
+      notifyError(err.message || "Gagal menghapus user");
     }
   };
 

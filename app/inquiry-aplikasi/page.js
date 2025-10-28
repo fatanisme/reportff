@@ -1,17 +1,18 @@
 "use client";
 import React, { useState } from "react";
 import ButtonExport from "../components/inquiry-aplikasi/ButtonExport";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const InquiryAplikasi = () => {
     const [nomorAplikasi, setNomorAplikasi] = useState("");
     const [data, setData] = useState([]);
     const [memo, setMemo] = useState([]);
     const [loading, setLoading] = useState(false);
+    const { warning, error: showError } = useNotification();
 
     const handleSearch = async () => {
         if (!nomorAplikasi.trim()) {
-            // Show alert if nomorAplikasi is empty or only contains spaces
-            alert("No aplikasi belum diisi atau hanya berisi spasi");
+            warning("Nomor aplikasi belum diisi atau hanya berisi spasi");
             return; // Prevent search if nomorAplikasi is empty or only spaces
         }
         setLoading(true); // Start loading state
@@ -28,10 +29,12 @@ const InquiryAplikasi = () => {
                 renderTablememo()
             } else {
                 console.error("Error fetching data:", result.message);
+                showError(result.message || "Gagal mengambil data aplikasi");
                 setData([]); // Reset data if error
             }
         } catch (error) {
             console.error("Error during fetch:", error);
+            showError("Terjadi kesalahan saat mengambil data aplikasi");
             setData([]); // Reset data if error occurs
         } finally {
             setLoading(false); // Stop loading state

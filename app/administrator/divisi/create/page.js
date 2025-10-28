@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 export default function CreateDivisiPage() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
+  const { success: notifySuccess, error: notifyError } = useNotification();
 
   const handleBack = () => {
     window.location.href = "/administrator/divisi";
@@ -14,15 +16,19 @@ export default function CreateDivisiPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await fetch("/api/divisi", {
+      const response = await fetch("/api/divisi", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, name, description }),
       });
-      alert("Divisi berhasil ditambahkan");
+      if (!response.ok) {
+        throw new Error("Gagal menambahkan divisi");
+      }
+      notifySuccess("Divisi berhasil ditambahkan");
       window.location.href = "/administrator/divisi";
     } catch (err) {
       console.error("Gagal tambah user:", err);
+      notifyError(err.message || "Gagal menambahkan divisi");
     }
   };
 

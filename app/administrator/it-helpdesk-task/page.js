@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const ItHelpDeskTaskPage = () => {
   const [nomorAplikasi, setNomorAplikasi] = useState("");
@@ -17,6 +18,13 @@ const ItHelpDeskTaskPage = () => {
   const [oneUpHistory, setOneUpHistory] = useState([]);
   const [resetMemo, setResetMemo] = useState("");
   const [resetSubmitting, setResetSubmitting] = useState(false);
+
+  const {
+    success: notifySuccess,
+    error: notifyError,
+    warning: notifyWarning,
+    confirm: confirmDialog,
+  } = useNotification();
 
   const memoRequirementMessages = {
     back: "Flow code aplikasi harus dalam status LIVE untuk menggunakan Back to Stage Review.",
@@ -39,7 +47,7 @@ const ItHelpDeskTaskPage = () => {
   const handleSearch = async () => {
     const trimmedNoApl = nomorAplikasi.trim();
     if (!trimmedNoApl) {
-      alert("Masukkan nomor aplikasi terlebih dahulu");
+      notifyWarning("Masukkan nomor aplikasi terlebih dahulu");
       return;
     }
 
@@ -130,28 +138,30 @@ const ItHelpDeskTaskPage = () => {
     event.preventDefault();
     const trimmedMemo = memoText.trim();
     if (!trimmedMemo) {
-      alert("Memo wajib diisi");
+      notifyWarning("Memo wajib diisi");
       return;
     }
     const trimmedNoApl = nomorAplikasi.trim();
     if (!trimmedNoApl) {
-      alert("Nomor aplikasi wajib diisi");
+      notifyWarning("Nomor aplikasi wajib diisi");
       return;
     }
 
     const normalizedType = (appliedType || "").toLowerCase();
     if (!["back", "cancel", "hold"].includes(normalizedType) || !canUseTaskForm) {
-      alert("Pengubahan flow code hanya tersedia untuk Back to Stage Review, Cancel Request, atau Buka Hold");
+      notifyWarning(
+        "Pengubahan flow code hanya tersedia untuk Back to Stage Review, Cancel Request, atau Buka Hold"
+      );
       return;
     }
 
     if (normalizedType === "back" && !previousStage) {
-      alert("Stage sebelumnya tidak ditemukan");
+      notifyWarning("Stage sebelumnya tidak ditemukan");
       return;
     }
 
     if (["cancel", "hold"].includes(normalizedType) && !previousStage) {
-      alert("Flow code tujuan tidak ditemukan");
+      notifyWarning("Flow code tujuan tidak ditemukan");
       return;
     }
 
@@ -166,9 +176,13 @@ const ItHelpDeskTaskPage = () => {
       ["cancel", "hold"].includes(normalizedType)
         ? `Flow code aplikasi ${trimmedNoApl} akan diubah menjadi "${stageLabel}" melalui ${actionLabel}. Lanjutkan?`
         : `Flow code aplikasi ${trimmedNoApl} akan diubah ke stage "${stageLabel}" melalui ${actionLabel}. Lanjutkan?`;
-    const confirmed = window.confirm(
-      confirmationMessage
-    );
+    const confirmed = await confirmDialog({
+      title: "Konfirmasi Perubahan Flow Code",
+      message: confirmationMessage,
+      confirmText: "Ya, proses",
+      cancelText: "Batalkan",
+      variant: ["cancel", "hold"].includes(normalizedType) ? "danger" : "info",
+    });
     if (!confirmed) {
       return;
     }
@@ -193,12 +207,12 @@ const ItHelpDeskTaskPage = () => {
         throw new Error(payload?.error || "Gagal memperbarui flow code");
       }
 
-      alert(payload?.message || "Flow code berhasil diperbarui");
+      notifySuccess(payload?.message || "Flow code berhasil diperbarui");
       setMemoText("");
       await handleSearch();
     } catch (err) {
       console.error("Error submit memo:", err);
-      alert(err.message || "Terjadi kesalahan saat mengirim memo");
+      notifyError(err.message || "Terjadi kesalahan saat mengirim memo");
     } finally {
       setSubmitting(false);
     }
@@ -208,19 +222,23 @@ const ItHelpDeskTaskPage = () => {
     event.preventDefault();
     const trimmedMemo = resetMemo.trim();
     if (!trimmedMemo) {
-      alert("Memo wajib diisi");
+      notifyWarning("Memo wajib diisi");
       return;
     }
 
     const trimmedNoApl = nomorAplikasi.trim();
     if (!trimmedNoApl) {
-      alert("Nomor aplikasi wajib diisi");
+      notifyWarning("Nomor aplikasi wajib diisi");
       return;
     }
 
-    const confirmed = window.confirm(
-      `Reset One Up Level untuk aplikasi ${trimmedNoApl} akan diproses. Lanjutkan?`
-    );
+    const confirmed = await confirmDialog({
+      title: "Konfirmasi Reset One Up Level",
+      message: `Reset One Up Level untuk aplikasi ${trimmedNoApl} akan diproses. Lanjutkan?`,
+      confirmText: "Ya, proses",
+      cancelText: "Batalkan",
+      variant: "danger",
+    });
     if (!confirmed) {
       return;
     }
@@ -245,12 +263,12 @@ const ItHelpDeskTaskPage = () => {
         throw new Error(payload?.error || "Gagal mengirim permintaan reset");
       }
 
-      alert(payload?.message || "Reset One Up Level berhasil diproses");
+      notifySuccess(payload?.message || "Reset One Up Level berhasil diproses");
       setResetMemo("");
       await handleSearch();
     } catch (err) {
       console.error("Error submit reset memo:", err);
-      alert(err.message || "Terjadi kesalahan saat mengirim permintaan reset");
+      notifyError(err.message || "Terjadi kesalahan saat mengirim permintaan reset");
     } finally {
       setResetSubmitting(false);
     }

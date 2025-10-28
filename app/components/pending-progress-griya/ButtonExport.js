@@ -1,7 +1,10 @@
+"use client";
+
 import React from "react";
 import Button from "../ui/Button";
 import { fetchExcelDetail } from "./getData";
 import { createExportExcel } from "../utils/exportExcel";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const buildTimestampFileName = (prefix = "DAILY_PROCEED_WISE") => {
     const now = new Date();
@@ -88,6 +91,7 @@ const withLeadingApostrophe = (value) => {
 
 export default function ButtonExport({ startDate, endDate, region, area, disabled = false }) {
     const params = { startDate, endDate, region, area };
+    const { warning: notifyWarning, error: notifyError, success: notifySuccess } = useNotification();
 
     const getDetail = async () => {
         const res = await fetchExcelDetail(params);
@@ -95,14 +99,15 @@ export default function ButtonExport({ startDate, endDate, region, area, disable
     };
 
     const handleButtonClick = async () => {
-        const dataDetail = await getDetail();
+        try {
+            const dataDetail = await getDetail();
 
-        if (!Array.isArray(dataDetail) || dataDetail.length === 0) {
-            alert("Data Excel export Griya Detail Wise tidak ada / kosong !");
-            return;
-        }
+            if (!Array.isArray(dataDetail) || dataDetail.length === 0) {
+                notifyWarning("Data Excel export Griya Detail Wise tidak ada atau kosong");
+                return;
+            }
 
-        const formattedDataDetail = dataDetail.map((item) => ({
+            const formattedDataDetail = dataDetail.map((item) => ({
             "TGL INPUT": item.TGL_INPUT || "",
             "NO APLIKASI": withLeadingApostrophe(item.NO_APLIKASI),
             "NAMA NASABAH": item.NAMA_NASABAH || "",
@@ -161,12 +166,17 @@ export default function ButtonExport({ startDate, endDate, region, area, disable
             "TOTAL SLA LIVE": item.TOTAL_SLA_LIVE || "",
         }));
 
-        createExportExcel(
-            formattedDataDetail,
-            headers,
-            "DATA SLA",
-            buildTimestampFileName("DAILY_PROCEED_WISE"),
-        );
+            createExportExcel(
+                formattedDataDetail,
+                headers,
+                "DATA SLA",
+                buildTimestampFileName("DAILY_PROCEED_WISE"),
+            );
+            notifySuccess("Data berhasil diekspor");
+        } catch (error) {
+            console.error("Gagal mengekspor data Griya:", error);
+            notifyError("Terjadi kesalahan saat mengekspor data");
+        }
     };
 
     return (

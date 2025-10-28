@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 export default function CreateMaintenancePage() {
   const [code_area, setCodeArea] = useState("");
@@ -8,6 +9,7 @@ export default function CreateMaintenancePage() {
   const [code_region, setCodeRegion] = useState("");
   const [region, setRegion] = useState("");
   const [region_alias, setRegionAlias] = useState("");
+  const { success: notifySuccess, error: notifyError } = useNotification();
 
   const handleBack = () => {
     window.location.href = "/administrator/maintenance-ro-(area)";
@@ -16,7 +18,7 @@ export default function CreateMaintenancePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await fetch("/api/maintenance", {
+      const response = await fetch("/api/maintenance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -27,10 +29,14 @@ export default function CreateMaintenancePage() {
           region_alias,
         }),
       });
-      alert("Maintenance berhasil ditambahkan");
+      if (!response.ok) {
+        throw new Error("Gagal menambahkan maintenance");
+      }
+      notifySuccess("Maintenance berhasil ditambahkan");
       window.location.href = "/administrator/maintenance-ro-(area)";
     } catch (err) {
       console.error("Gagal tambah user:", err);
+      notifyError(err.message || "Gagal menambahkan maintenance");
     }
   };
 

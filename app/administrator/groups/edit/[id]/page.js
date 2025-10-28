@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 export default function EditGroupPage() {
   const { id } = useParams();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const { success: notifySuccess, error: notifyError } = useNotification();
 
   const handleBack = () => {
     window.location.href = "/administrator/groups";
@@ -40,14 +42,15 @@ export default function EditGroupPage() {
 
       const result = await response.json();
       if (!response.ok) {
-        alert(result?.error || "Gagal update group");
+        notifyError(result?.error || "Gagal update group");
         return;
       }
 
-      alert("Group berhasil diupdate");
+      notifySuccess("Group berhasil diupdate");
       window.location.href = "/administrator/groups";
     } catch (err) {
       console.error("Gagal update group:", err);
+      notifyError(err.message || "Terjadi kesalahan saat memperbarui group");
     }
   };
 

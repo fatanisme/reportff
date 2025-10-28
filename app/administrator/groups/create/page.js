@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 export default function CreateGroupPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const { success: notifySuccess, error: notifyError } = useNotification();
 
   const handleBack = () => {
     window.location.href = "/administrator/groups";
@@ -21,14 +23,15 @@ export default function CreateGroupPage() {
 
       const result = await response.json();
       if (!response.ok) {
-        alert(result?.error || "Gagal tambah group");
+        notifyError(result?.error || "Gagal tambah group");
         return;
       }
 
-      alert("Group berhasil ditambahkan");
+      notifySuccess("Group berhasil ditambahkan");
       window.location.href = "/administrator/groups";
     } catch (err) {
       console.error("Gagal tambah group:", err);
+      notifyError(err.message || "Terjadi kesalahan saat menambah group");
     }
   };
 

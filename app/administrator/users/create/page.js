@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const EMAIL_DOMAIN = "@bankbsi.co.id";
 
@@ -18,6 +19,7 @@ export default function CreateUserPage() {
   const [groupId, setGroupId] = useState("");
   const [loadingGroups, setLoadingGroups] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { success: notifySuccess, error: notifyError } = useNotification();
 
   const handleBack = () => {
     window.location.href = "/administrator/users";
@@ -88,16 +90,16 @@ export default function CreateUserPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        alert(result?.error || "Gagal tambah user");
+        notifyError(result?.error || "Gagal tambah user");
         setIsSubmitting(false);
         return;
       }
 
-      alert("User berhasil ditambahkan");
+      notifySuccess("User berhasil ditambahkan");
       window.location.href = "/administrator/users";
     } catch (err) {
       console.error("Gagal tambah user:", err);
-      alert("Terjadi kesalahan saat menambah user");
+      notifyError("Terjadi kesalahan saat menambah user");
       setIsSubmitting(false);
     }
   };

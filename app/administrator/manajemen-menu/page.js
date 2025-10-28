@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const createDefaultFormState = () => ({
   id: null,
@@ -23,6 +24,8 @@ export default function ManajemenMenuPage() {
   const [formState, setFormState] = useState(createDefaultFormState);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const { success: notifySuccess, error: notifyError, confirm: confirmDialog } =
+    useNotification();
 
   const resetForm = useCallback(() => {
     setFormState(createDefaultFormState());
@@ -248,19 +251,23 @@ export default function ManajemenMenuPage() {
       }
 
       await fetchMenus();
-      alert("Menu berhasil disimpan");
+      notifySuccess("Menu berhasil disimpan");
       resetForm();
     } catch (error) {
       console.error("Gagal menyimpan menu:", error);
-      alert(error.message || "Gagal menyimpan menu");
+      notifyError(error.message || "Gagal menyimpan menu");
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (menu) => {
-    const confirmed = confirm(
-      `Yakin ingin menghapus menu "${menu.urlPath}"? Tindakan ini tidak dapat dibatalkan.`
-    );
+    const confirmed = await confirmDialog({
+      title: "Hapus Menu",
+      message: `Yakin ingin menghapus menu "${menu.urlPath}"? Tindakan ini tidak dapat dibatalkan.`,
+      confirmText: "Ya, hapus",
+      cancelText: "Batal",
+      variant: "danger",
+    });
 
     if (!confirmed) return;
 
@@ -273,13 +280,13 @@ export default function ManajemenMenuPage() {
         throw new Error(json?.error || "Gagal menghapus menu");
       }
       await fetchMenus();
-      alert("Menu berhasil dihapus");
+      notifySuccess("Menu berhasil dihapus");
       if (formMode === "edit" && formState.id === menu.id) {
         resetForm();
       }
     } catch (error) {
       console.error("Gagal menghapus menu:", error);
-      alert(error.message || "Gagal menghapus menu");
+      notifyError(error.message || "Gagal menghapus menu");
     }
   };
 

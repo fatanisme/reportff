@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const createDefaultFormState = () => ({
   id: null,
@@ -21,6 +22,8 @@ export default function MenuManajemenPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formMode, setFormMode] = useState(null); // "create" | "edit" | null
   const [formState, setFormState] = useState(createDefaultFormState);
+  const { success: notifySuccess, error: notifyError, confirm: confirmDialog } =
+    useNotification();
 
   const resetForm = useCallback(() => {
     setFormState(createDefaultFormState());
@@ -206,19 +209,23 @@ export default function MenuManajemenPage() {
       }
 
       await fetchPermissions();
-      alert("Hak akses berhasil disimpan");
+      notifySuccess("Hak akses berhasil disimpan");
       resetForm();
     } catch (error) {
       console.error("Gagal menyimpan data hak akses:", error);
-      alert(error.message || "Gagal menyimpan data");
+      notifyError(error.message || "Gagal menyimpan data");
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (permission) => {
-    const confirmed = confirm(
-      `Yakin ingin menghapus pengaturan "${permission.urlPath}"? Tindakan ini tidak dapat dibatalkan.`
-    );
+    const confirmed = await confirmDialog({
+      title: "Hapus Hak Akses",
+      message: `Yakin ingin menghapus pengaturan "${permission.urlPath}"? Tindakan ini tidak dapat dibatalkan.`,
+      confirmText: "Ya, hapus",
+      cancelText: "Batal",
+      variant: "danger",
+    });
 
     if (!confirmed) return;
 
@@ -231,13 +238,13 @@ export default function MenuManajemenPage() {
         throw new Error(json?.error || "Gagal menghapus data");
       }
       await fetchPermissions();
-      alert("Hak akses berhasil dihapus");
+      notifySuccess("Hak akses berhasil dihapus");
       if (formMode === "edit" && formState.id === permission.id) {
         resetForm();
       }
     } catch (error) {
       console.error("Gagal menghapus data hak akses:", error);
-      alert(error.message || "Gagal menghapus data");
+      notifyError(error.message || "Gagal menghapus data");
     }
   };
 

@@ -7,6 +7,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import GlobalLoadingOverlay from "./components/ui/GlobalLoadingOverlay";
+import { NotificationProvider } from "./components/ui/NotificationProvider";
 import "./globals.css";
 
 export default function RootLayout({ children }) {
@@ -39,12 +40,14 @@ export default function RootLayout({ children }) {
       <ErrorBoundary>
         <html lang="id">
           <body className="flex flex-col min-h-screen">
-            {!isAuthPage && <Header />}
-            <GlobalLoadingOverlay />
-            <main className="flex-grow pt-16 pb-10 px-4 sm:px-6 lg:px-10">
-              {children}
-            </main>
-            {!isAuthPage && <Footer />}
+            <NotificationProvider>
+              {!isAuthPage && <Header />}
+              <GlobalLoadingOverlay />
+              <main className="flex-grow pt-16 pb-10 px-4 sm:px-6 lg:px-10">
+                {children}
+              </main>
+              {!isAuthPage && <Footer />}
+            </NotificationProvider>
           </body>
         </html>
       </ErrorBoundary>

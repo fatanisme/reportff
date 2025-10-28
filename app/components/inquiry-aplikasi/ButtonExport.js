@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import Button from '../ui/Button';
 import {
@@ -7,30 +9,45 @@ import {
 import {
     createExportExcel,
 } from '../utils/exportExcel'
+import { useNotification } from '@/app/components/ui/NotificationProvider';
 
 export default function ButtonExport({ no_apl, type }) {
 
     const params = { no_apl };
+    const { warning: notifyWarning, error: notifyError, success: notifySuccess } = useNotification();
 
     const getDetail = async () => {
         const res = await fetchData(params);
         return res || []
     }
 
-    const handleButtonClick = () => {
-
-        getDetail().then((res)=>{
-            if (type == 1 && res[0].length === 0) {
-                alert("Data Excel export tidak ada / kosong !");
+    const handleButtonClick = async () => {
+        try {
+            const res = await getDetail();
+            if (!Array.isArray(res) || res.length === 0) {
+                notifyWarning("Data export tidak tersedia");
                 return;
             }
 
-            if (type == 2 && res[1].length === 0) {
-                alert("Data Excel Memo export tidak ada / kosong !");
-                return;
+            const detailRows = Array.isArray(res[0]) ? res[0] : [];
+            const memoRows = Array.isArray(res[1]) ? res[1] : [];
+
+            if (type === 1) {
+                if (detailRows.length === 0) {
+                    notifyWarning("Data Excel export tidak ada atau kosong");
+                    return;
+                }
+            }
+
+            if (type === 2) {
+                const firstMemo = memoRows[0]?.MEMO ?? "";
+                if (!firstMemo) {
+                    notifyWarning("Data Excel Memo export tidak ada atau kosong");
+                    return;
+                }
             }
     
-            const formattedDataDetail = res[0].map((item) => {
+            const formattedDataDetail = detailRows.map((item) => {
                 const newItem = {
                     "TGL INPUT": item.TGL_INPUT || "",
                     "NO APLIKASI": item.NO_APLIKASI || "",
@@ -108,7 +125,8 @@ export default function ButtonExport({ no_apl, type }) {
                 'TOTAL SLA LIVE'
             ];
 
-            const rows = res[1][0].MEMO.split('###');
+            const rawMemo = memoRows[0]?.MEMO ?? "";
+            const rows = rawMemo ? rawMemo.split('###') : [];
 
             const parsedData = rows.map(row => row.split('|'));
 
@@ -142,7 +160,11 @@ export default function ButtonExport({ no_apl, type }) {
                     `Detail Memo WISE NO APLIKASI ${no_apl}.xlsx`,
                 )
             }
-        })
+            notifySuccess("Data berhasil diekspor");
+        } catch (error) {
+            console.error("Gagal mengekspor data inquiry aplikasi:", error);
+            notifyError("Terjadi kesalahan saat mengekspor data");
+        }
 
     }
 

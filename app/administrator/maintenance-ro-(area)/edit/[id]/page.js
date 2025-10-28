@@ -2,82 +2,118 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useNotification } from "@/app/components/ui/NotificationProvider";
 
-export default function EditDivisiPage() {
+export default function EditMaintenancePage() {
   const { id } = useParams();
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [codeArea, setCodeArea] = useState("");
+  const [area, setArea] = useState("");
+  const [codeRegion, setCodeRegion] = useState("");
+  const [region, setRegion] = useState("");
+  const [regionAlias, setRegionAlias] = useState("");
+  const { success: notifySuccess, error: notifyError } = useNotification();
 
   const handleBack = () => {
     window.location.href = "/administrator/maintenance-ro-(area)";
   };
 
   useEffect(() => {
-    const fetchDivisi = async () => {
+    const fetchMaintenance = async () => {
       try {
-        const res = await fetch(`/api/divisi/${id}`);
+        const res = await fetch(`/api/maintenance/${id}`);
         const result = await res.json();
         if (result?.data) {
-          setCode(result.data.DIVISION_CODE || "");
-          setName(result.data.DIVISION_NAME || "");
-          setDescription(result.data.DESCRIPTION || "");
+          setCodeArea(result.data.KODE_AREA || "");
+          setArea(result.data.AREA || "");
+          setCodeRegion(result.data.KODE_REGION || "");
+          setRegion(result.data.REGION || "");
+          setRegionAlias(result.data.REGION_ALIAS || "");
         }
       } catch (err) {
-        console.error("Gagal ambil data divisi:", err);
+        console.error("Gagal ambil data maintenance:", err);
       }
     };
 
-    if (id) fetchDivisi();
+    if (id) fetchMaintenance();
   }, [id]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await fetch(`/api/divisi/${id}`, {
+      const response = await fetch(`/api/maintenance/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, name, description }),
+        body: JSON.stringify({
+          code_area: codeArea,
+          area,
+          code_region: codeRegion,
+          region,
+          region_alias: regionAlias,
+        }),
       });
-      alert("Divisi berhasil diupdate");
-      window.location.href = "/administrator/divisi";
+      if (!response.ok) {
+        throw new Error("Gagal memperbarui maintenance");
+      }
+      notifySuccess("Maintenance berhasil diupdate");
+      window.location.href = "/administrator/maintenance-ro-(area)";
     } catch (err) {
-      console.error("Gagal update divisi:", err);
+      console.error("Gagal update maintenance:", err);
+      notifyError(err.message || "Gagal memperbarui maintenance");
     }
   };
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-lg font-semibold mb-4">Edit Divisi</h2>
+        <h2 className="text-lg font-semibold mb-4">Edit Maintenance</h2>
         <form onSubmit={handleUpdate} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium">Kode Divisi</label>
+            <label className="block text-sm font-medium">Kode Area</label>
             <input
               type="text"
               className="w-full px-3 py-2 border rounded"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
+              value={codeArea}
+              onChange={(e) => setCodeArea(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Nama Divisi</label>
+            <label className="block text-sm font-medium">Area</label>
             <input
               type="text"
               className="w-full px-3 py-2 border rounded"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Deskripsi</label>
+            <label className="block text-sm font-medium">Kode Region</label>
             <input
               type="text"
               className="w-full px-3 py-2 border rounded"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={codeRegion}
+              onChange={(e) => setCodeRegion(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Region</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Region Alias</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded"
+              value={regionAlias}
+              onChange={(e) => setRegionAlias(e.target.value)}
               required
             />
           </div>
