@@ -17,7 +17,7 @@ export const fetchCair = async () => {
   }
 };
 
-export const fetchAreas = async ({ region, area }) => {
+export const fetchAreas = async ({ region }) => {
   try {
     const query = buildQuery({ kode_region: region });
     const { data } = await axios.get(`/area?${query}`);

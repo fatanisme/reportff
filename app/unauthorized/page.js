@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 export default function UnauthorizedPage() {
@@ -16,18 +17,18 @@ export default function UnauthorizedPage() {
           administrator apabila membutuhkan akses tambahan.
         </p>
         <div className="mt-6 flex justify-center gap-3">
-          <a
+          <Link
             href="/"
             className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
           >
             Kembali ke Beranda
-          </a>
-          <a
+          </Link>
+          <Link
             href="/auth/login"
             className="rounded border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
           >
             Login
-          </a>
+          </Link>
         </div>
       </div>
     </div>

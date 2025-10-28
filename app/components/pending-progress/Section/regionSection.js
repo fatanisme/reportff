@@ -3,7 +3,7 @@ import Dropdown from "../../ui/Dropdown";
 import Button from "../../ui/Button";
 import { fetchAreas, fetchRegions, fetchChartData } from "../getData";
 
-export default function regionSection({
+export default function RegionSection({
   startDate,
   endDate,
   region,
@@ -28,7 +28,7 @@ export default function regionSection({
   useEffect(() => {
     if (!region) return; // jangan fetch kalau region belum dipilih
     const getAreas = async () => {
-      const res = await fetchAreas({ region, area });
+      const res = await fetchAreas({ region });
       setAreas(res || []);
     };
     getAreas();

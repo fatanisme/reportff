@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import DateInput from '../../ui/DateInput';
 import ButtonExport from '../ButtonExport';
 
-export default function filterTglSection({ region, area, isLoading }) {
+export default function FilterTglSection({ region, area, isLoading }) {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 

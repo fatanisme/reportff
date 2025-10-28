@@ -8,14 +8,14 @@ export default function DataDisplaySection({ dataChart, region, area, isLoading 
     const hasData = Array.isArray(dataChart) && dataChart.length > 0;
     const isChartLoading = Boolean(isLoading);
 
-    const getDataCair = async () => {
-        const res = await fetchCair({region,area})
-        setCairs(res || [])
-    }
-
     useEffect(() => {
-        getDataCair()
-    }, []);
+        const getDataCair = async () => {
+            const res = await fetchCair({ region, area });
+            setCairs(res || []);
+        };
+
+        getDataCair();
+    }, [region, area]);
 
     const cairData = cairs.find(item => item.CATEGORY === "CAIR");
     const rejectData = cairs.find(item => item.CATEGORY === "REJECT");

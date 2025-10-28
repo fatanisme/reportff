@@ -3,7 +3,7 @@ import Dropdown from '../../ui/Dropdown';
 import Button from '../../ui/Button';
 import { fetchAreas, fetchRegions, fetchChartData } from '../getData';
 
-export default function regionSection({
+export default function RegionSection({
     startDate, 
     endDate, 
     region, 

@@ -1,19 +1,24 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-const DivisisTable = () => {
+const DivisisTableContent = () => {
   const [divisis, setDivisis] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const searchParams = useSearchParams();
-  const flowCode = searchParams.get("flow_code").toUpperCase();
-  const mode = searchParams.get("mode");
+  const rawFlowCode = searchParams.get("flow_code");
+  const flowCode = rawFlowCode ? rawFlowCode.toUpperCase() : "";
+  const mode = searchParams.get("mode") ?? "";
 
   useEffect(() => {
+    if (!flowCode || !mode) {
+      return;
+    }
+
     const fetchDivisis = async () => {
       try {
         const res = await fetch(
@@ -27,7 +32,7 @@ const DivisisTable = () => {
       }
     };
     fetchDivisis();
-  }, []);
+  }, [flowCode, mode]);
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -194,5 +199,17 @@ const DivisisTable = () => {
     </div>
   );
 };
+
+const LoadingFallback = () => (
+  <div className="p-6 bg-gray-100 min-h-screen flex items-center justify-center">
+    <div className="rounded bg-white px-6 py-4 shadow">Memuat detail aplikasi...</div>
+  </div>
+);
+
+const DivisisTable = () => (
+  <Suspense fallback={<LoadingFallback />}>
+    <DivisisTableContent />
+  </Suspense>
+);
 
 export default DivisisTable;
