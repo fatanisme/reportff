@@ -3,10 +3,15 @@ import React, { useEffect, useRef } from "react";
 import * as am4core from "@amcharts/amcharts4/core";
 import * as am4charts from "@amcharts/amcharts4/charts";
 
-export default function Chart({ data }) {
+export default function Chart({ data, filters = {} }) {
   const chartDivRef = useRef(null); // DOM target untuk chart
   const chartRef = useRef(null); // Simpan instance chart
   const chartStateRef = useRef({ chart: null, valueAxis: null });
+  const filtersRef = useRef(filters);
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
 
   useEffect(() => {
     if (!chartDivRef.current) return;
@@ -31,6 +36,25 @@ export default function Chart({ data }) {
     valueAxis.renderer.minWidth = 50;
     valueAxis.extraMax = 0.2; // ruang tambahan supaya label tidak terpotong
 
+    const openDetail = (dataItem, mode) => {
+      if (!dataItem) return;
+      const category = dataItem.categoryX;
+      if (!category) return;
+
+      const params = new URLSearchParams();
+      params.set("flow_code", category);
+      params.set("mode", mode);
+
+      const { region, area, startDate, endDate } = filtersRef.current || {};
+      if (region) params.set("region", region);
+      if (area) params.set("area", area);
+      if (startDate) params.set("startDate", startDate);
+      if (endDate) params.set("endDate", endDate);
+
+      const url = `/grafik/pending-&-progress/detail-wise?${params.toString()}`;
+      window.open(url, "_blank");
+    };
+
     const createSeries = (field, name, colorField) => {
       let series = chart.series.push(new am4charts.ColumnSeries());
       series.dataFields.valueY = field;
@@ -42,6 +66,10 @@ export default function Chart({ data }) {
       series.columns.template.propertyFields.stroke = colorField;
       series.columns.template.strokeWidth = 0;
       series.columns.template.width = am4core.percent(150);
+      series.columns.template.cursorOverStyle = am4core.MouseCursorStyle.pointer;
+      series.columns.template.events.on("hit", (ev) => {
+        openDetail(ev.target.dataItem, field);
+      });
 
       let valueLabel = series.bullets.push(new am4charts.LabelBullet());
       valueLabel.label.text = "{valueY}";
@@ -54,20 +82,12 @@ export default function Chart({ data }) {
       valueLabel.label.truncate = false;
       valueLabel.label.wrap = false;
       valueLabel.locationY = 1; // posisi di atas batang
+      valueLabel.verticalCenter = "bottom";
       valueLabel.dy = -15; // geser label keluar dari batang
       valueLabel.label.interactionsEnabled = true;
       valueLabel.label.cursorOverStyle = am4core.MouseCursorStyle.pointer;
       valueLabel.label.events.on("hit", function (ev) {
-        const dataItem = ev.target.dataItem;
-        const category = dataItem.categoryX; // misalnya nama cabang atau kategori
-        const type = field; // 'IN' atau 'LAST'
-
-        // Gabungkan jadi satu parameter, misalnya: "Jakarta-IN"
-        const url = `/grafik/pending-&-progress/detail-wise?flow_code=${encodeURIComponent(
-          category
-        )}&mode=${encodeURIComponent(type)}`;
-
-        window.open(url, "_blank");
+        openDetail(ev.target.dataItem, field);
       });
 
       let nameLabel = series.bullets.push(new am4charts.LabelBullet());
