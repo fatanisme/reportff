@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DataTable from "@/app/components/ui/DataTable";
 import DateInput from "@/app/components/ui/DateInput";
 import Button from "@/app/components/ui/Button";
+import TablePageLayout from "@/app/components/ui/TablePageLayout";
 import axios from "@/lib/axios";
 import { createExportExcel } from "@/app/components/utils/exportExcel";
 import { useNotification } from "@/app/components/ui/NotificationProvider";
@@ -392,14 +393,11 @@ export default function RealisasiSlaFFPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-900">Realisasi SLA FF</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Pilih tanggal untuk menampilkan realisasi SLA FF pada sistem WISE.
-        </p>
-
-        <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-end">
+    <TablePageLayout
+      title="Realisasi SLA FF"
+      description="Pilih tanggal untuk menampilkan realisasi SLA FF pada sistem WISE."
+      actions={
+        <>
           <div className="md:w-60">
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">
               Tanggal
@@ -422,9 +420,9 @@ export default function RealisasiSlaFFPage() {
               Download Data WISE
             </Button>
           </div>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       <DataTable
         title="Realisasi SLA FF"
         data={rows}
@@ -434,6 +432,6 @@ export default function RealisasiSlaFFPage() {
         searchPlaceholder="Cari nomor aplikasi, cabang, atau region..."
         initialSort={{ key: "noAplikasi", direction: "asc" }}
       />
-    </div>
+    </TablePageLayout>
   );
 }

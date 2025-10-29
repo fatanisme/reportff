@@ -1,5 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import TablePageLayout from "@/app/components/ui/TablePageLayout";
+import Button from "@/app/components/ui/Button";
 import ButtonExport from "../components/inquiry-aplikasi/ButtonExport";
 import { useNotification } from "@/app/components/ui/NotificationProvider";
 
@@ -8,6 +10,10 @@ const InquiryAplikasi = () => {
     const [data, setData] = useState([]);
     const [memo, setMemo] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [memoSort, setMemoSort] = useState({ key: "tanggal", direction: "desc" });
+    const [platform, setPlatform] = useState("WISE");
+    const [statusMessage, setStatusMessage] = useState("");
+    const [hasSearched, setHasSearched] = useState(false);
     const { warning, error: showError } = useNotification();
 
     const handleSearch = async () => {
@@ -16,26 +22,43 @@ const InquiryAplikasi = () => {
             return; // Prevent search if nomorAplikasi is empty or only spaces
         }
         setLoading(true); // Start loading state
+        setHasSearched(true);
+        setStatusMessage("");
+        setData([]);
+        setMemo([]);
         try {
             const response = await fetch(
-                `/api/inquiry-aplikasi?no_apl=${nomorAplikasi}`
+                `/api/inquiry-aplikasi?no_apl=${encodeURIComponent(nomorAplikasi)}&platform=${encodeURIComponent(platform)}`
             );
             const result = await response.json();
             if (result.success) {
-                console.log(result.data[0])
-                setData(result.data[0]);
-                setMemo(result.data[1])
-                renderTable()
-                renderTablememo()
+                const detailRows = Array.isArray(result.data?.[0]) ? result.data[0] : [];
+                const memoRows = Array.isArray(result.data?.[1]) ? result.data[1] : [];
+
+                setData(detailRows);
+                setMemo(memoRows);
+                setMemoSort({ key: "tanggal", direction: "desc" });
+
+                if (detailRows.length === 0 && memoRows.length === 0) {
+                    setStatusMessage(result.message || `DATA ${platform} TIDAK DITEMUKAN`);
+                } else {
+                    setStatusMessage("");
+                }
             } else {
                 console.error("Error fetching data:", result.message);
                 showError(result.message || "Gagal mengambil data aplikasi");
                 setData([]); // Reset data if error
+                setMemo([]);
+                setMemoSort({ key: "tanggal", direction: "desc" });
+                setStatusMessage(result.message || `DATA ${platform} TIDAK DITEMUKAN`);
             }
         } catch (error) {
             console.error("Error during fetch:", error);
             showError("Terjadi kesalahan saat mengambil data aplikasi");
             setData([]); // Reset data if error occurs
+            setMemo([]);
+            setMemoSort({ key: "tanggal", direction: "desc" });
+            setStatusMessage("Terjadi kesalahan saat mengambil data");
         } finally {
             setLoading(false); // Stop loading state
         }
@@ -43,14 +66,26 @@ const InquiryAplikasi = () => {
 
     // Render table
     const renderTable = () => {
+        if (!hasSearched) {
+            return (
+                <div className="rounded border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    Masukkan nomor aplikasi dan pilih platform untuk memulai pencarian.
+                </div>
+            );
+        }
+
         if (data.length === 0) {
-            return <div>No data found</div>;
+            return (
+                <div className="rounded border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    {statusMessage || `DATA ${platform} TIDAK DITEMUKAN`}
+                </div>
+            );
         }
 
         return (
 
             <div className="overflow-x-auto mt-2">
-                <table className="min-w-full table-auto border-collapse border border-gray-300">
+                <table className="min-w-full table-auto border-collapse border border-slate-200">
                     <thead>
                         <tr>
 
@@ -201,38 +236,139 @@ const InquiryAplikasi = () => {
         );
     };
 
-    const renderTablememo = () => {
-        let rows = []
-        let parsedData = []
-        if(memo.length !== 0){
-            rows = memo[0].MEMO.split('###');
+    const normalizedMemo = useMemo(() => {
+        if (!Array.isArray(memo)) return [];
+        return memo.map((item) => ({
+            stageLabel: item?.stageLabel || item?.STAGE_LABEL || item?.stage || item?.STAGE || "",
+            stageCode: item?.stageCode || item?.STAGE_CODE || item?.STAGE_RAW || "",
+            picId: item?.picId || item?.PIC_ID || "",
+            picName: item?.picName || item?.PIC_NAME || "",
+            tanggalRaw: item?.tanggal || item?.TANGGAL || item?.TANGGAL_RAW || "",
+            memoText: item?.memo || item?.MEMO || item?.MEMO_RAW || "",
+        }));
+    }, [memo]);
 
-            parsedData = rows.map(row => row.split('|'));
-            console.log(parsedData)
-        }else{
-            return
+    const sortedMemo = useMemo(() => {
+        const { key, direction } = memoSort;
+        const factor = direction === "asc" ? 1 : -1;
+        const clone = [...normalizedMemo];
+
+        clone.sort((a, b) => {
+            const getComparable = (item) => {
+                switch (key) {
+                    case "stage":
+                        return (item.stageLabel || item.stageCode || "").toString().toLowerCase();
+                    case "pic":
+                        return (item.picName || item.picId || "").toString().toLowerCase();
+                    case "tanggal": {
+                        const value = item.tanggalRaw;
+                        const time = value ? Date.parse(value.replace(" ", "T")) : 0;
+                        return Number.isNaN(time) ? 0 : time;
+                    }
+                    case "memo":
+                        return (item.memoText || "").toString().toLowerCase();
+                    default:
+                        return "";
+                }
+            };
+
+            const valueA = getComparable(a);
+            const valueB = getComparable(b);
+
+            if (valueA === valueB) return 0;
+            return valueA > valueB ? factor : -factor;
+        });
+
+        return clone;
+    }, [normalizedMemo, memoSort]);
+
+    const handleMemoSort = (key) => {
+        setMemoSort((prev) => {
+            if (prev.key === key) {
+                return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+            }
+            return { key, direction: "asc" };
+        });
+    };
+
+    const renderMemoSortIndicator = (key) => {
+        if (memoSort.key !== key) return <span className="text-xs text-slate-400">⇅</span>;
+        return (
+            <span className="text-xs font-semibold text-blue-600">
+                {memoSort.direction === "asc" ? "▲" : "▼"}
+            </span>
+        );
+    };
+
+    const renderTablememo = () => {
+        if (!sortedMemo.length) {
+            return null;
         }
 
         return (
 
             <div className="overflow-x-auto mt-2">
-                <table className="min-w-full table-auto border-collapse border border-gray-300">
+                <table className="min-w-full table-auto border-collapse border border-slate-200">
                     <thead>
                         <tr>
-                            <th className="border px-4 py-2">Stage</th>
-                            <th className="border px-4 py-2">PIC</th>
-                            <th className="border px-4 py-2">Tanggal</th>
-                            <th className="border px-4 py-2">Isi Memo</th>
+                            <th className="border px-4 py-2 text-left">No</th>
+                            <th
+                                className="cursor-pointer border px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                onClick={() => handleMemoSort("stage")}
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <span>Stage</span>
+                                    {renderMemoSortIndicator("stage")}
+                                </div>
+                            </th>
+                            <th
+                                className="cursor-pointer border px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                onClick={() => handleMemoSort("pic")}
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <span>PIC</span>
+                                    {renderMemoSortIndicator("pic")}
+                                </div>
+                            </th>
+                            <th
+                                className="cursor-pointer border px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                onClick={() => handleMemoSort("tanggal")}
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <span>Tanggal</span>
+                                    {renderMemoSortIndicator("tanggal")}
+                                </div>
+                            </th>
+                            <th
+                                className="cursor-pointer border px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                onClick={() => handleMemoSort("memo")}
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <span>Isi Memo</span>
+                                    {renderMemoSortIndicator("memo")}
+                                </div>
+                            </th>
                         </tr>
 
                     </thead>
                     <tbody>
-                        {parsedData.map((cols, index) => (
+                        {sortedMemo.map((row, index) => (
                             <tr key={index}>
-                                <td className="border px-4 py-2">{cols[2]}</td>
-                                <td className="border px-4 py-2">{cols[0]}</td>
-                                <td className="border px-4 py-2">{cols[3]}</td>
-                                <td className="border px-4 py-2">{cols[4]}</td>
+                                <td className="border px-4 py-2 text-sm font-semibold text-slate-700">
+                                    {index + 1}
+                                </td>
+                                <td className="border px-4 py-2 text-sm text-slate-700">
+                                    {row.stageLabel || row.stageCode || "-"}
+                                </td>
+                                <td className="border px-4 py-2 text-sm text-slate-700">
+                                    {row.picName || row.picId || "-"}
+                                </td>
+                                <td className="border px-4 py-2 text-sm text-slate-700">
+                                    {row.tanggalRaw || "-"}
+                                </td>
+                                <td className="border px-4 py-2 text-sm text-slate-700">
+                                    {row.memoText || "-"}
+                                </td>
                             </tr>
                         ))}
 
@@ -242,39 +378,90 @@ const InquiryAplikasi = () => {
         );
     };
 
+    useEffect(() => {
+        setData([]);
+        setMemo([]);
+        setHasSearched(false);
+        setStatusMessage("");
+        setMemoSort({ key: "tanggal", direction: "desc" });
+    }, [platform]);
+
+    const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30";
+
     return (
-        <div className="p-6 bg-gray-100 min-h-screen">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-semibold mb-4">
-                    Cari Data Pending & Progress
-                </h2>
-                <div className="flex space-x-2 w-1/2">
+        <TablePageLayout
+            title="Cari Data Pending & Progress"
+            description="Masukkan nomor aplikasi untuk melihat detail proses dan memo pending."
+            actionsPlacement="bottom"
+            actions={
+                <div className="flex w-full flex-col gap-3 md:w-1/2 md:flex-row md:items-center md:gap-3">
+                    <select
+                        className={`${inputClass} w-full`}
+                        value={platform}
+                        onChange={(event) => setPlatform(event.target.value.toUpperCase())}
+                        aria-label="Pilih Platform"
+                    >
+                        <option value="WISE">WISE</option>
+                        <option value="FOS" disabled>
+                            FOS (Coming Soon)
+                        </option>
+                        <option value="FAS" disabled>
+                            FAS (Coming Soon)
+                        </option>
+                    </select>
                     <input
                         type="text"
-                        className="flex-grow p-2 border rounded"
+                        className={`${inputClass} w-full`}
                         value={nomorAplikasi}
                         onChange={(e) => setNomorAplikasi(e.target.value)}
                         placeholder="Masukkan Nomor Aplikasi"
+                        aria-label="Masukkan Nomor Aplikasi"
                     />
-                    <button
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    <Button
                         onClick={handleSearch}
+                        disabled={loading}
+                        className="w-full md:w-auto"
                     >
-                        Search
-                    </button>
+                        {loading ? "Mencari..." : "Cari"}
+                    </Button>
                 </div>
-                {data.length != 0 ? <ButtonExport no_apl={nomorAplikasi} type="1"/> : ''}
-                {loading ? (
-                    <div>Loading...</div>
-                ) : (
-                    
-                    renderTable()
+            }
+        >
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                {hasSearched && statusMessage && (
+                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                        {statusMessage}
+                    </div>
                 )}
-                {memo.length !== 0 ? <h3 className="text-lg mt-5">MEMO (Pending)</h3> : ''}
-                {memo.length !== 0 ? <ButtonExport no_apl={nomorAplikasi} type="2"/> : ''}
-                {renderTablememo()}
+
+                {platform === "WISE" && data.length !== 0 && (
+                    <div className="mb-4">
+                        <ButtonExport no_apl={nomorAplikasi} platform={platform} type="1" />
+                    </div>
+                )}
+
+                {loading ? <div>Loading...</div> : renderTable()}
+
+                {platform === "WISE" && memo.length !== 0 && (
+                    <div className="mt-6 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-slate-800">MEMO (Pending)</h3>
+                            <ButtonExport no_apl={nomorAplikasi} platform={platform} type="2" />
+                        </div>
+                        {renderTablememo()}
+                    </div>
+                )}
+
+                {platform === "WISE" && memo.length === 0 && !statusMessage && (
+                    <div className="mt-6 text-sm text-slate-500">Tidak ada memo pending.</div>
+                )}
+                {platform !== "WISE" && hasSearched && (
+                    <div className="mt-6 text-sm text-slate-500">
+                        Pilih platform WISE untuk melihat detail lintas tahap.
+                    </div>
+                )}
             </div>
-        </div>
+        </TablePageLayout>
     );
 };
 

@@ -11,7 +11,7 @@ import {
 
 const PUBLIC_SECTION_KEYS = ["grafik", "productivity", "report", "griya"];
 const ADMIN_SECTION_KEY = "administrator";
-const INQUIRY_LINK_KEY = "inquiry-aplikasi";
+const STANDALONE_PRIMARY_KEYS = ["inquiry-aplikasi", "dedupe-aplikasi"];
 
 const Header = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -115,13 +115,16 @@ const Header = () => {
   const adminSection = MENU_SECTIONS.find(
     (section) => section.key === ADMIN_SECTION_KEY
   );
-  const inquiryLink = STANDALONE_LINKS.find(
-    (link) => link.key === INQUIRY_LINK_KEY
+  const primaryStandaloneLinks = STANDALONE_LINKS.filter((link) =>
+    STANDALONE_PRIMARY_KEYS.includes(link.key)
   );
-  const showInquiryButton =
-    !inquiryLink ||
-    allowedSet === null ||
-    allowedSet.has(inquiryLink.normalizedPath);
+
+  const visibleStandaloneLinks =
+    allowedSet === null
+      ? primaryStandaloneLinks
+      : primaryStandaloneLinks.filter((link) =>
+          allowedSet.has(link.normalizedPath)
+        );
 
   return (
     <header className="bg-blue-700 text-white h-12 flex items-center justify-between px-6 fixed top-0 w-full shadow-md z-50">
@@ -151,14 +154,15 @@ const Header = () => {
               );
             })}
 
-            {showInquiryButton && inquiryLink && (
+            {visibleStandaloneLinks.map((link) => (
               <button
+                key={link.key}
                 className="hover:bg-blue-800 text-white px-4 py-2 rounded text-sm"
-                onClick={() => router.push(inquiryLink.path)}
+                onClick={() => router.push(link.path)}
               >
-                {inquiryLink.label}
+                {link.label}
               </button>
-            )}
+            ))}
           </div>
           <button
             className="bg-gray-800 hover:bg-gray-900 text-white text-sm px-4 py-2 rounded"

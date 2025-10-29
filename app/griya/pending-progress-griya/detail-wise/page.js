@@ -96,19 +96,19 @@ const DetailWiseContent = () => {
         if (endDate) params.set("endDate", endDate);
         if (refDate) params.set("refDate", refDate);
 
-        const response = await fetch(`/api/grafik/detail-wise?${params.toString()}`);
+        const response = await fetch(`/api/griya/detail-wise?${params.toString()}`);
         if (!response.ok) {
-          throw new Error("Gagal mengambil data detail WISE");
+          throw new Error("Gagal mengambil data detail WISE Griya");
         }
         const payload = await response.json();
         if (!payload?.success) {
-          throw new Error(payload?.message || "Gagal memuat detail WISE");
+          throw new Error(payload?.message || "Gagal memuat detail WISE Griya");
         }
         const data = Array.isArray(payload.data) ? payload.data.map(normalizeRow) : [];
         setRows(data);
         setCurrentPage(1);
       } catch (err) {
-        console.error("Error fetch detail-wise:", err);
+        console.error("Error fetch detail-wise Griya:", err);
         setRows([]);
         setError(err.message || "Terjadi kesalahan saat mengambil data");
       } finally {
@@ -213,8 +213,9 @@ const DetailWiseContent = () => {
     const fileNameParts = [
       flowCode || "DETAIL",
       mode || "WISE",
+      "GRIYA",
       (refDate || endDate || startDate || new Date().toISOString().slice(0, 10)).replace(/\s+/g, ""),
-      "DETAIL_WISE_PENDING_PROGRESS.xlsx",
+      "DETAIL_WISE_GRIYA_PENDING_PROGRESS.xlsx",
     ];
 
     createExportExcel(
@@ -235,7 +236,7 @@ const DetailWiseContent = () => {
         "JUMLAH RETURN",
         "BRANCH DDE",
       ],
-      "Detail WISE - Pending & Progress",
+      "Detail WISE - Pending & Progress Griya",
       fileNameParts.filter(Boolean).join("_")
     );
   };
@@ -256,8 +257,8 @@ const DetailWiseContent = () => {
 
   return (
     <TablePageLayout
-      title={`Detail Pending & Progress - ${stageLabel}`}
-      description={`Daftar aplikasi WISE untuk stage ${stageLabel} dengan status ${modeLabel}.`}
+      title={`Detail Pending & Progress Griya - ${stageLabel}`}
+      description={`Daftar aplikasi WISE Griya untuk stage ${stageLabel} dengan status ${modeLabel}.`}
       actions={
         <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center">
@@ -370,7 +371,7 @@ const DetailWiseContent = () => {
                     colSpan={15}
                     className="py-6 text-center text-sm font-semibold uppercase tracking-wide text-slate-500"
                   >
-                    DATA WISE TIDAK TERSEDIA
+                    DATA WISE GRIYA TIDAK TERSEDIA
                   </td>
                 </tr>
               )}
@@ -409,18 +410,10 @@ const DetailWiseContent = () => {
   );
 };
 
-const LoadingFallback = () => (
-  <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
-    <div className="rounded bg-white px-6 py-4 text-sm text-slate-600 shadow">
-      Memuat detail aplikasi...
-    </div>
-  </div>
-);
-
-const DetailWisePage = () => (
-  <Suspense fallback={<LoadingFallback />}>
-    <DetailWiseContent />
-  </Suspense>
-);
-
-export default DetailWisePage;
+export default function DetailWisePage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center text-sm text-slate-500">Memuat detail...</div>}>
+      <DetailWiseContent />
+    </Suspense>
+  );
+}

@@ -8,10 +8,12 @@ import React, { useState } from 'react';
 export default function PendingProgressGriya() {
   const [region, setRegion] = useState("All");
   const [area, setArea] = useState("All");
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [chartData, setChartData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [summaryData, setSummaryData] = useState([]);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
   return (
     <div className="p-2 bg-gray-100 min-h-screen">
@@ -37,13 +39,20 @@ export default function PendingProgressGriya() {
           setArea={setArea}
           setChartData={setChartData}
           setLoading={setIsLoading}
+          setSummaryData={setSummaryData}
+          setSummaryLoading={setIsSummaryLoading}
           isLoading={isLoading}
+          isSummaryLoading={isSummaryLoading}
         />
         
         <FilterTglSection
           region={region}
           area={area}
           isLoading={isLoading}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          endDate={endDate}
+          setEndDate={setEndDate}
         />
 
         <DataDisplaySection
@@ -51,6 +60,10 @@ export default function PendingProgressGriya() {
           region={region}
           area={area}
           isLoading={isLoading}
+          startDate={startDate}
+          endDate={endDate}
+          summaryData={summaryData}
+          isSummaryLoading={isSummaryLoading}
         />
       </div>
     </div>

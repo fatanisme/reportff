@@ -7,7 +7,26 @@ const getTodayJakarta = () => {
   return formatter.format(new Date());
 };
 
-const getFirstDayOfMonthJakarta = () => {
+const sanitizeDate = (value) => {
+  if (!value) return null;
+  const match = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/.exec(value);
+  if (!match) return null;
+  return `${match[1]}-${match[2]}-${match[3]}`;
+};
+
+const getFirstDayOfMonthJakarta = (referenceDateString) => {
+  const baseString = sanitizeDate(referenceDateString);
+  if (baseString) {
+    const base = new Date(`${baseString}T00:00:00+07:00`);
+    if (!Number.isNaN(base.getTime())) {
+      base.setDate(1);
+      const year = base.getUTCFullYear();
+      const month = String(base.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(base.getUTCDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+  }
+
   const now = new Date();
   const options = { timeZone: "Asia/Jakarta" };
   const jakartaDate = new Date(now.toLocaleString("en-US", options));
@@ -16,6 +35,16 @@ const getFirstDayOfMonthJakarta = () => {
     timeZone: "Asia/Jakarta",
   });
   return formatter.format(jakartaDate);
+};
+
+const ensureStartBeforeEnd = (start, end) => {
+  if (!start || !end) return start;
+  const startTime = Date.parse(`${start}T00:00:00Z`);
+  const endTime = Date.parse(`${end}T00:00:00Z`);
+  if (Number.isNaN(startTime) || Number.isNaN(endTime)) {
+    return start;
+  }
+  return startTime > endTime ? end : start;
 };
 
 const REGION_FILTER = `
@@ -163,9 +192,13 @@ export async function GET(req) {
   try {
     const kodeArea = req.nextUrl.searchParams.get("kode_area") || "All";
     const kodeRegion = req.nextUrl.searchParams.get("kode_region") || "All";
+    const startDateInput = sanitizeDate(req.nextUrl.searchParams.get("startDate"));
+    const endDateInput = sanitizeDate(req.nextUrl.searchParams.get("endDate"));
 
-    const tanggalAkhir = getTodayJakarta();
-    const tanggalAwal = getFirstDayOfMonthJakarta();
+    const todayJakarta = getTodayJakarta();
+    const tanggalAkhir = endDateInput || startDateInput || todayJakarta;
+    const tanggalAwalBase = startDateInput || getFirstDayOfMonthJakarta(tanggalAkhir);
+    const tanggalAwal = ensureStartBeforeEnd(tanggalAwalBase, tanggalAkhir);
 
     const data = await executeQuery(DASHBOARD_QUERY, {
       p_date_first: tanggalAwal,

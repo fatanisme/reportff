@@ -3,15 +3,20 @@ import React, { useEffect, useRef } from "react";
 import * as am4core from "@amcharts/amcharts4/core";
 import * as am4charts from "@amcharts/amcharts4/charts";
 
-export default function Chart({ data, filters = {} }) {
+export default function Chart({ data, filters = {}, detailPath = "/grafik/pending-&-progress/detail-wise" }) {
   const chartDivRef = useRef(null); // DOM target untuk chart
   const chartRef = useRef(null); // Simpan instance chart
   const chartStateRef = useRef({ chart: null, valueAxis: null });
   const filtersRef = useRef(filters);
+  const detailPathRef = useRef(detailPath);
 
   useEffect(() => {
     filtersRef.current = filters;
   }, [filters]);
+
+  useEffect(() => {
+    detailPathRef.current = detailPath || "/grafik/pending-&-progress/detail-wise";
+  }, [detailPath]);
 
   useEffect(() => {
     if (!chartDivRef.current) return;
@@ -51,7 +56,8 @@ export default function Chart({ data, filters = {} }) {
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
 
-      const url = `/grafik/pending-&-progress/detail-wise?${params.toString()}`;
+      const basePath = detailPathRef.current || "/grafik/pending-&-progress/detail-wise";
+      const url = `${basePath}?${params.toString()}`;
       window.open(url, "_blank");
     };
 

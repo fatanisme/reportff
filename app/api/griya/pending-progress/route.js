@@ -9,6 +9,13 @@ const getTodayJakarta = () => {
   return formatter.format(new Date());
 };
 
+const sanitizeDate = (value) => {
+  if (!value) return null;
+  const match = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/.exec(value);
+  if (!match) return null;
+  return `${match[1]}-${match[2]}-${match[3]}`;
+};
+
 const REGION_AREA_FILTER = `
   AND (
     :p_kode_region = 'All'
@@ -53,11 +60,13 @@ export async function GET(req) {
   try {
     const kodeArea = req.nextUrl.searchParams.get("kode_area") || "All";
     const kodeRegion = req.nextUrl.searchParams.get("kode_region") || "All";
+    const endDateInput = sanitizeDate(req.nextUrl.searchParams.get("endDate"));
 
     const todayJakarta = getTodayJakarta();
+    const targetDate = endDateInput || todayJakarta;
 
     const data = await executeQuery(DASHBOARD_QUERY, {
-      p_tgll: todayJakarta,
+      p_tgll: targetDate,
       p_kode_region: kodeRegion,
       p_kode_area: kodeArea,
     });

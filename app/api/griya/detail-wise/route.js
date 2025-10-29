@@ -74,7 +74,7 @@ export async function GET(request) {
   const dateColumn = usesUpdateDate ? "a.UPDATE_DATE" : "a.CREATE_DATE";
 
   const where = [
-    "(a.JENIS_PRODUK LIKE '%MITRAGUNA%' OR a.JENIS_PRODUK LIKE '%PENSIUN%')",
+    "a.JENIS_PRODUK LIKE '%GRIYA%'",
     "a.NO_APLIKASI > '20190615'",
   ];
 
@@ -287,7 +287,7 @@ export async function GET(request) {
     const rows = await executeQuery(query, binds);
     return NextResponse.json({ success: true, data: rows || [] });
   } catch (error) {
-    console.error("Error fetch grafik detail-wise:", error);
+    console.error("Error fetch grafik detail-wise griya:", error);
     return NextResponse.json(
       { success: false, message: "Gagal mengambil data" },
       { status: 500 }

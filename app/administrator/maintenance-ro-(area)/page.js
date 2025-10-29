@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNotification } from "@/app/components/ui/NotificationProvider";
+import TablePageLayout from "@/app/components/ui/TablePageLayout";
+import Button from "@/app/components/ui/Button";
 
 const DivisisTable = () => {
   const [maintenances, setDivisis] = useState([]);
@@ -99,48 +101,53 @@ const DivisisTable = () => {
     return sortConfig.direction === "asc" ? "🔼" : "🔽";
   };
 
-  return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
-          <h2 className="text-lg font-semibold">Tabel Data Maintenance</h2>
-          <div className="flex gap-4 flex-wrap md:flex-nowrap">
-            <input
-              type="text"
-              className="p-2 border rounded w-full md:w-auto"
-              placeholder="Cari maintenance..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
-            <select
-              className="p-2 border rounded"
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-            <button
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              onClick={() =>
-                (window.location.href =
-                  "/administrator/maintenance-ro-(area)/create")
-              }
-            >
-              + Create Maintenance
-            </button>
-          </div>
-        </div>
+  const inputClass =
+    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30";
+  const selectClass =
+    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 md:w-auto";
 
-        <table className="min-w-full table-auto border border-black-300">
+  return (
+    <TablePageLayout
+      title="Tabel Data Maintenance"
+      description="Kelola mapping maintenance RO (Area)."
+      actions={
+        <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center">
+          <input
+            type="text"
+            className={inputClass}
+            placeholder="Cari maintenance..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+          <select
+            className={selectClass}
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+          >
+            <option value={5}>5 / halaman</option>
+            <option value={10}>10 / halaman</option>
+            <option value={25}>25 / halaman</option>
+            <option value={50}>50 / halaman</option>
+          </select>
+          <Button
+            onClick={() =>
+              (window.location.href =
+                "/administrator/maintenance-ro-(area)/create")
+            }
+          >
+            + Create Maintenance
+          </Button>
+        </div>
+      }
+    >
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <table className="min-w-full table-auto border border-slate-200">
           <thead className="bg-gray-200">
             <tr>
               {columns.map((col) => (
@@ -171,20 +178,20 @@ const DivisisTable = () => {
                 <td className="px-4 py-2 border">{maintenance.KODE_REGION}</td>
                 <td className="px-4 py-2 border">{maintenance.REGION}</td>
                 <td className="px-4 py-2 border">{maintenance.REGION_ALIAS}</td>
-                <td className="px-4 py-2 border flex items-center space-x-2">
+                <td className="flex items-center gap-2 px-4 py-2 border">
                   <button
-                    className="p-2 bg-yellow-500 rounded hover:bg-yellow-600 text-white"
+                    className="rounded-lg border border-amber-400 px-3 py-1.5 text-sm font-semibold text-amber-600 transition hover:bg-amber-50 hover:text-amber-700"
                     onClick={() =>
                       (window.location.href = `/administrator/maintenance-ro-(area)/edit/${maintenance.ID}`)
                     }
                   >
-                    ✏️
+                    Edit
                   </button>
                   <button
-                    className="p-2 bg-red-500 rounded hover:bg-red-600 text-white"
+                    className="rounded-lg border border-red-400 px-3 py-1.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 hover:text-red-700"
                     onClick={() => handleDelete(maintenance.ID)}
                   >
-                    🗑️
+                    Delete
                   </button>
                 </td>
               </tr>
@@ -202,7 +209,7 @@ const DivisisTable = () => {
           </tbody>
         </table>
 
-        <div className="mt-4 flex justify-between items-center text-sm">
+        <div className="mt-4 flex flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
           <span>
             Halaman {currentPage} dari {totalPages || 1}
           </span>
@@ -210,21 +217,21 @@ const DivisisTable = () => {
             <button
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((prev) => prev - 1)}
-              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
             >
-              ⬅️ Prev
+              Prev
             </button>
             <button
               disabled={currentPage === totalPages || totalPages === 0}
               onClick={() => setCurrentPage((prev) => prev + 1)}
-              className="px-3 py-1 bg-gray-300 rounded disabled:opacity-50"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
             >
-              Next ➡️
+              Next
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </TablePageLayout>
   );
 };
 

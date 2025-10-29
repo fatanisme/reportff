@@ -1,11 +1,16 @@
-import React, {useState} from 'react';
+import React from 'react';
 import DateInput from '../../ui/DateInput';
 import ButtonExport from '../ButtonExport';
 
-export default function FilterTglSection({ region, area, isLoading }) {
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-
+export default function FilterTglSection({
+    region,
+    area,
+    isLoading,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+}) {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-end">
             <div>
@@ -24,13 +29,13 @@ export default function FilterTglSection({ region, area, isLoading }) {
                     disabled={isLoading}
                 />
             </div>
-            <ButtonExport
-                startDate = {startDate}
-                endDate = {endDate}
-                region = {region}
-                area = {area}
-                disabled={isLoading}
-            />
+	            <ButtonExport
+	                startDate={startDate}
+	                endDate={endDate}
+	                region={region}
+	                area={area}
+	                disabled={isLoading}
+	            />
         </div>
     );
 }

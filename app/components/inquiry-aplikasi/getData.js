@@ -9,12 +9,13 @@ const buildQuery = (params = {}) => {
 };
 
 
-export const fetchData = async ({ no_apl }) => {
+export const fetchData = async ({ no_apl, platform = "WISE" }) => {
     try {
-        const query = buildQuery({ no_apl: no_apl});
+        const query = buildQuery({ no_apl, platform });
         const { data } = await axios.get(`/inquiry-aplikasi?${query}`);
-        if (data.success) return data.data;
+        return data;
     } catch (error) {
         console.error("Error fetching chart data:", error);
+        throw error;
     }
 };

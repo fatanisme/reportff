@@ -11,19 +11,31 @@ import {
 } from '../utils/exportExcel'
 import { useNotification } from '@/app/components/ui/NotificationProvider';
 
-export default function ButtonExport({ no_apl, type }) {
+export default function ButtonExport({ no_apl, platform = "WISE", type }) {
 
-    const params = { no_apl };
+    const params = { no_apl, platform };
     const { warning: notifyWarning, error: notifyError, success: notifySuccess } = useNotification();
 
     const getDetail = async () => {
         const res = await fetchData(params);
-        return res || []
+        if (!res?.success) {
+            const message = res?.message || "Data export tidak tersedia";
+            notifyWarning(message);
+            return null;
+        }
+        return res.data || [];
     }
 
     const handleButtonClick = async () => {
         try {
+            if (platform !== "WISE") {
+                notifyWarning("Export hanya tersedia untuk platform WISE");
+                return;
+            }
             const res = await getDetail();
+            if (!res) {
+                return;
+            }
             if (!Array.isArray(res) || res.length === 0) {
                 notifyWarning("Data export tidak tersedia");
                 return;
@@ -39,12 +51,9 @@ export default function ButtonExport({ no_apl, type }) {
                 }
             }
 
-            if (type === 2) {
-                const firstMemo = memoRows[0]?.MEMO ?? "";
-                if (!firstMemo) {
-                    notifyWarning("Data Excel Memo export tidak ada atau kosong");
-                    return;
-                }
+            if (type === 2 && memoRows.length === 0) {
+                notifyWarning("Data Excel Memo export tidak ada atau kosong");
+                return;
             }
     
             const formattedDataDetail = detailRows.map((item) => {
@@ -125,24 +134,16 @@ export default function ButtonExport({ no_apl, type }) {
                 'TOTAL SLA LIVE'
             ];
 
-            const rawMemo = memoRows[0]?.MEMO ?? "";
-            const rows = rawMemo ? rawMemo.split('###') : [];
-
-            const parsedData = rows.map(row => row.split('|'));
-
-            const formattedDataDetail2 = parsedData.map((item) => {
-                const newItem = {
-                    "Stage": item[2] || "",
-                    "PIC": item[0] || "",
-                    "Tanggal": item[3] || "",
-                    "Isi Memo": item[4] || "",
-                };
-    
-                return newItem;
-            });
+            const formattedDataDetail2 = memoRows.map((item, index) => ({
+                "No": index + 1,
+                "Stage": item?.stageLabel || item?.STAGE_LABEL || item?.stageCode || item?.STAGE_CODE || item?.STAGE_RAW || "",
+                "PIC": item?.picName || item?.PIC_NAME || item?.picId || item?.PIC_ID || "",
+                "Tanggal": item?.tanggal || item?.TANGGAL || item?.TANGGAL_RAW || "",
+                "Isi Memo": item?.memo || item?.MEMO || item?.MEMO_RAW || "",
+            }));
     
             const headers2 = [
-                'Stage', 'PIC', 'Tanggal', 'Isi Memo'
+                'No', 'Stage', 'PIC', 'Tanggal', 'Isi Memo'
             ];
     
             if(type == 1){

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNotification } from "@/app/components/ui/NotificationProvider";
+import TablePageLayout from "@/app/components/ui/TablePageLayout";
+import Button from "@/app/components/ui/Button";
 
 const createDefaultFormState = () => ({
   id: null,
@@ -24,6 +26,8 @@ export default function ManajemenMenuPage() {
   const [formState, setFormState] = useState(createDefaultFormState);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const { success: notifySuccess, error: notifyError, confirm: confirmDialog } =
     useNotification();
 
@@ -164,6 +168,17 @@ export default function ManajemenMenuPage() {
       return combined.toLowerCase().includes(term);
     });
   }, [menus, searchTerm]);
+
+  const { paginatedMenus, totalPages, safeCurrentPage } = useMemo(() => {
+    const total = Math.max(Math.ceil(filteredMenus.length / itemsPerPage), 1);
+    const current = Math.min(currentPage, total);
+    const startIndex = (current - 1) * itemsPerPage;
+    return {
+      totalPages: total,
+      safeCurrentPage: current,
+      paginatedMenus: filteredMenus.slice(startIndex, startIndex + itemsPerPage),
+    };
+  }, [filteredMenus, currentPage, itemsPerPage]);
 
   const openCreateForm = () => {
     setFormState(createDefaultFormState());
@@ -354,97 +369,127 @@ export default function ManajemenMenuPage() {
     return <div className="flex flex-wrap gap-1">{badges}</div>;
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="rounded-lg bg-white p-6 shadow">
-          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-800">
-                Manajemen Menu
-              </h1>
-              <p className="text-sm text-gray-500">
-                Kelola akses URL berdasarkan group pengguna.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 md:flex-row md:items-center">
-              <input
-                type="text"
-                className="w-full rounded border px-3 py-2 md:w-64"
-                placeholder="Cari menu atau group..."
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
-              <button
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                onClick={openCreateForm}
-              >
-                + Tambah Menu
-              </button>
-            </div>
-          </div>
+  const inputClass = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30";
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full table-auto border border-gray-200 text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="border px-4 py-2 text-left">URL Path</th>
-                  <th className="border px-4 py-2 text-left">Akses</th>
-                  <th className="border px-4 py-2 text-left">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoadingMenus ? (
+  return (
+    <>
+      <TablePageLayout
+        title="Manajemen Menu"
+        description="Kelola akses URL berdasarkan group pengguna."
+        actions={
+          <div className="flex w-full flex-col gap-3 md:flex-row md:items-center">
+            <input
+              type="text"
+              className={`md:w-64 ${inputClass}`}
+              placeholder="Cari menu atau group..."
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setCurrentPage(1);
+              }}
+            />
+            <select
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 md:w-40"
+              value={itemsPerPage}
+              onChange={(event) => {
+                setItemsPerPage(Number(event.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <option value={5}>5 / halaman</option>
+              <option value={10}>10 / halaman</option>
+              <option value={25}>25 / halaman</option>
+              <option value={50}>50 / halaman</option>
+            </select>
+            <Button onClick={openCreateForm}>+ Tambah Menu</Button>
+          </div>
+        }
+      >
+        <div className="w-full">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto border border-slate-200 text-sm">
+                <thead className="bg-slate-100">
                   <tr>
-                    <td
-                      colSpan={4}
-                      className="border px-4 py-6 text-center text-gray-500"
-                    >
-                      Memuat data menu...
-                    </td>
+                    <th className="border px-4 py-2 text-left">URL Path</th>
+                    <th className="border px-4 py-2 text-left">Akses</th>
+                    <th className="border px-4 py-2 text-left">Aksi</th>
                   </tr>
-                ) : filteredMenus.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="border px-4 py-6 text-center text-gray-500"
-                    >
-                      Tidak ada data menu.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredMenus.map((menu) => (
-                    <tr key={menu.id} className="hover:bg-gray-50">
-                      <td className="border px-4 py-2 font-medium text-gray-700">
-                        {menu.urlPath}
-                      </td>
-                      <td className="border px-4 py-2">
-                        {renderGroupsBadge(menu)}
-                      </td>
-                      <td className="border px-4 py-2">
-                        <div className="flex gap-2">
-                          <button
-                            className="rounded bg-yellow-500 px-3 py-1 text-xs font-semibold text-white hover:bg-yellow-600"
-                            onClick={() => openEditForm(menu)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="rounded bg-red-500 px-3 py-1 text-xs font-semibold text-white hover:bg-red-600"
-                            onClick={() => handleDelete(menu)}
-                          >
-                            Hapus
-                          </button>
-                        </div>
+                </thead>
+                <tbody>
+                  {isLoadingMenus ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="border px-4 py-6 text-center text-slate-500"
+                      >
+                        Memuat data menu...
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : filteredMenus.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="border px-4 py-6 text-center text-slate-500"
+                      >
+                        Tidak ada data menu.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedMenus.map((menu) => (
+                      <tr key={menu.id} className="transition hover:bg-slate-50">
+                        <td className="border px-4 py-2 font-medium text-slate-700">
+                          {menu.urlPath}
+                        </td>
+                        <td className="border px-4 py-2">
+                          {renderGroupsBadge(menu)}
+                        </td>
+                        <td className="border px-4 py-2">
+                          <div className="flex gap-2">
+                            <button
+                              className="rounded-lg border border-amber-400 px-3 py-1 text-xs font-semibold text-amber-600 transition hover:bg-amber-50 hover:text-amber-700"
+                              onClick={() => openEditForm(menu)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="rounded-lg border border-red-400 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:text-red-700"
+                              onClick={() => handleDelete(menu)}
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex flex-col gap-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
+              <span>
+                Halaman {safeCurrentPage} dari {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  disabled={safeCurrentPage <= 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 disabled:cursor-not-allowed disabled:text-slate-400"
+                >
+                  Prev
+                </button>
+                <button
+                  disabled={safeCurrentPage >= totalPages}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 disabled:cursor-not-allowed disabled:text-slate-400"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </TablePageLayout>
 
       {isModalOpen && formMode && (
         <div
@@ -732,6 +777,6 @@ export default function ManajemenMenuPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

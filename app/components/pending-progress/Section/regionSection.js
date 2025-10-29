@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Dropdown from "../../ui/Dropdown";
 import Button from "../../ui/Button";
-import { fetchAreas, fetchRegions, fetchChartData } from "../getData";
+import { fetchAreas, fetchRegions, fetchChartData, fetchCair } from "../getData";
 
 export default function RegionSection({
   startDate,
@@ -12,7 +12,10 @@ export default function RegionSection({
   setArea,
   setChartData,
   setLoading,
+  setSummaryData,
+  setSummaryLoading,
   isLoading,
+  isSummaryLoading,
 }) {
   const [regions, setRegions] = useState([]);
   const [areas, setAreas] = useState([]);
@@ -34,23 +37,32 @@ export default function RegionSection({
     getAreas();
   }, [region]);
 
-  const getDataChart = async () => {
+  const getData = async () => {
     const params = { startDate, endDate, region, area };
     try {
       setLoading(true);
-      const res = await fetchChartData(params);
-      setChartData(res || []);
+      setSummaryLoading(true);
+      setSummaryData([]);
+      const effectiveEndDate = params.endDate || params.startDate || undefined;
+      const [chartRes, summaryRes] = await Promise.all([
+        fetchChartData({ area: params.area, region: params.region, endDate: effectiveEndDate }),
+        fetchCair(params),
+      ]);
+      setChartData(chartRes || []);
+      setSummaryData(Array.isArray(summaryRes) ? summaryRes : []);
     } catch (error) {
       console.error("Gagal memuat data chart:", error);
       setChartData([]);
+      setSummaryData([]);
     } finally {
       setLoading(false);
+      setSummaryLoading(false);
     }
   };
 
   const handleButtonClick = () => {
-    if (!isLoading) {
-      getDataChart();
+    if (!isLoading && !isSummaryLoading) {
+      getData();
     }
   };
   return (
@@ -62,7 +74,7 @@ export default function RegionSection({
         onChange={setRegion}
         valueKey="KODE_REGION"
         labelKey="REGION_ALIAS"
-        disabled={isLoading}
+        disabled={isLoading || isSummaryLoading}
       />
       <Dropdown
         label="Pilih Area"
@@ -71,15 +83,15 @@ export default function RegionSection({
         onChange={setArea}
         valueKey="KODE_AREA"
         labelKey="AREA"
-        disabled={isLoading}
+        disabled={isLoading || isSummaryLoading}
       />
 
       <Button
         className="bg-blue-500 text-white px-4 text-sm py-2 rounded hover:bg-blue-600 w-1/2"
         onClick={handleButtonClick}
-        disabled={isLoading}
+        disabled={isLoading || isSummaryLoading}
       >
-        {isLoading ? "Memuat..." : "Tampilkan"}
+        {isLoading || isSummaryLoading ? "Memuat..." : "Tampilkan"}
       </Button>
     </div>
   );

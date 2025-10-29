@@ -1,7 +1,7 @@
 import { executeQuery } from "@/lib/oracle";
 import oracledb from "oracledb";
 
-export async function GET(req) {
+export async function GET() {
   try {
     const query = `
         BEGIN

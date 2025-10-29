@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DataTable from "@/app/components/ui/DataTable";
 import Button from "@/app/components/ui/Button";
+import TablePageLayout from "@/app/components/ui/TablePageLayout";
 import axios from "@/lib/axios";
 import { createExportExcel } from "@/app/components/utils/exportExcel";
 import { useNotification } from "@/app/components/ui/NotificationProvider";
@@ -189,15 +190,11 @@ export default function PipelineFFPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">Pipeline FF</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Ringkasan aplikasi FF Mitraguna &amp; Pensiun lengkap dengan status pipeline terbaru.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
+    <TablePageLayout
+      title="Pipeline FF"
+      description="Ringkasan aplikasi FF Mitraguna & Pensiun lengkap dengan status pipeline terbaru."
+      actions={
+        <>
           <Button onClick={fetchData} disabled={loading}>
             {loading ? "Memuat..." : "Muat Ulang"}
           </Button>
@@ -208,9 +205,9 @@ export default function PipelineFFPage() {
           >
             Download
           </Button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       <DataTable
         title="Pipeline FF"
         data={rows}
@@ -230,6 +227,6 @@ export default function PipelineFFPage() {
         searchPlaceholder="Cari nomor aplikasi, cabang, atau status..."
         initialSort={{ key: "noAplikasi", direction: "asc" }}
       />
-    </div>
+    </TablePageLayout>
   );
 }
