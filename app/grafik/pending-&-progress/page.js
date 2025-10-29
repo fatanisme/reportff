@@ -3,7 +3,8 @@
 import FilterTglSection from "@/app/components/pending-progress/Section/filterTglSection";
 import DataDisplaySection from "@/app/components/pending-progress/Section/dataDisplaySection";
 import RegionSection from "@/app/components/pending-progress/Section/regionSection";
-import React, { useState } from "react";
+import LoadingOverlay from "@/app/components/ui/LoadingOverlay";
+import React, { useMemo, useState } from "react";
 
 export default function PendingProgress() {
   const [region, setRegion] = useState("All");
@@ -15,9 +16,15 @@ export default function PendingProgress() {
   const [summaryData, setSummaryData] = useState([]);
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
+  const isBusy = useMemo(
+    () => Boolean(isLoading || isSummaryLoading),
+    [isLoading, isSummaryLoading]
+  );
+
   return (
-    <div className="p-2 bg-gray-100 min-h-screen">
-      <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="min-h-screen bg-gray-100 p-2">
+      <div className="relative rounded-lg bg-white p-6 shadow-md">
+        <LoadingOverlay show={isBusy} />
         <h2 className="text-lg font-semibold mb-1">
           Dashboard Daily In Progress & Pending
         </h2>
@@ -30,41 +37,43 @@ export default function PendingProgress() {
           <label className="mr-1">FOG</label>
         </div>
 
-        <RegionSection
-          startDate={startDate}
-          endDate={endDate}
-          region={region}
-          setRegion={setRegion}
-          area={area}
-          setArea={setArea}
-          setChartData={setChartData}
-          setLoading={setIsLoading}
-          setSummaryData={setSummaryData}
-          setSummaryLoading={setIsSummaryLoading}
-          isLoading={isLoading}
-          isSummaryLoading={isSummaryLoading}
-        />
+        <div className={isBusy ? "pointer-events-none select-none opacity-60 transition" : "transition"}>
+          <RegionSection
+            startDate={startDate}
+            endDate={endDate}
+            region={region}
+            setRegion={setRegion}
+            area={area}
+            setArea={setArea}
+            setChartData={setChartData}
+            setLoading={setIsLoading}
+            setSummaryData={setSummaryData}
+            setSummaryLoading={setIsSummaryLoading}
+            isLoading={isLoading}
+            isSummaryLoading={isSummaryLoading}
+          />
 
-        <FilterTglSection
-          region={region}
-          area={area}
-          isLoading={isLoading}
-          startDate={startDate}
-          setStartDate={setStartDate}
-          endDate={endDate}
-          setEndDate={setEndDate}
-        />
+          <FilterTglSection
+            region={region}
+            area={area}
+            isLoading={isLoading}
+            startDate={startDate}
+            setStartDate={setStartDate}
+            endDate={endDate}
+            setEndDate={setEndDate}
+          />
 
-        <DataDisplaySection
-          dataChart={chartData}
-          isLoading={isLoading}
-          region={region}
-          area={area}
-          startDate={startDate}
-          endDate={endDate}
-          summaryData={summaryData}
-          isSummaryLoading={isSummaryLoading}
-        />
+          <DataDisplaySection
+            dataChart={chartData}
+            isLoading={isLoading}
+            region={region}
+            area={area}
+            startDate={startDate}
+            endDate={endDate}
+            summaryData={summaryData}
+            isSummaryLoading={isSummaryLoading}
+          />
+        </div>
       </div>
     </div>
   );

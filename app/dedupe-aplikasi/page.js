@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import TablePageLayout from "@/app/components/ui/TablePageLayout";
 import Button from "@/app/components/ui/Button";
 import ButtonExport from "../components/dedupe-aplikasi/ButtonExport";
+import LoadingOverlay from "@/app/components/ui/LoadingOverlay";
 import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const DedupeAplikasi = () => {
@@ -16,6 +17,8 @@ const DedupeAplikasi = () => {
   const [statusMessage, setStatusMessage] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const { warning, error: showError } = useNotification();
+
+  const isBusy = useMemo(() => Boolean(loading), [loading]);
 
   const handleSearch = async () => {
     if (!nomorAplikasi.trim()) {
@@ -400,7 +403,7 @@ const DedupeAplikasi = () => {
             type="text"
             className={`${inputClass} w-full`}
             value={nomorAplikasi}
-            onChange={(e) => setNomorAplikasi(e.target.value)}
+            onChange={(event) => setNomorAplikasi(event.target.value)}
             placeholder="Masukkan Nomor Aplikasi"
             aria-label="Masukkan Nomor Aplikasi"
           />
@@ -414,52 +417,59 @@ const DedupeAplikasi = () => {
         </div>
       }
     >
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <LoadingOverlay show={isBusy} />
         {hasSearched && statusMessage && (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             {statusMessage}
           </div>
         )}
 
-        {platform === "WISE" && data.length !== 0 && (
-          <div className="mb-4">
-            <ButtonExport
-              no_apl={nomorAplikasi}
-              platform={platform}
-              type="1"
-            />
-          </div>
-        )}
-
-        {loading ? <div>Loading...</div> : renderTable()}
-
-        {platform === "WISE" && memo.length !== 0 && (
-          <div className="mt-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-800">
-                MEMO (Pending)
-              </h3>
+        <div
+          className={
+            isBusy ? "pointer-events-none select-none opacity-60 transition" : "transition"
+          }
+        >
+          {platform === "WISE" && data.length !== 0 && (
+            <div className="mb-4">
               <ButtonExport
                 no_apl={nomorAplikasi}
                 platform={platform}
-                type="2"
+                type="1"
               />
             </div>
-            {renderTableMemo()}
-          </div>
-        )}
+          )}
 
-        {platform === "WISE" && memo.length === 0 && !statusMessage && (
-          <div className="mt-6 text-sm text-slate-500">
-            Tidak ada memo pending.
-          </div>
-        )}
+          {loading ? <div>Loading...</div> : renderTable()}
 
-        {platform !== "WISE" && hasSearched && (
-          <div className="mt-6 text-sm text-slate-500">
-            Pilih platform WISE untuk melihat detail lintas tahap.
-          </div>
-        )}
+          {platform === "WISE" && memo.length !== 0 && (
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-800">
+                  MEMO (Pending)
+                </h3>
+                <ButtonExport
+                  no_apl={nomorAplikasi}
+                  platform={platform}
+                  type="2"
+                />
+              </div>
+              {renderTableMemo()}
+            </div>
+          )}
+
+          {platform === "WISE" && memo.length === 0 && !statusMessage && (
+            <div className="mt-6 text-sm text-slate-500">
+              Tidak ada memo pending.
+            </div>
+          )}
+
+          {platform !== "WISE" && hasSearched && (
+            <div className="mt-6 text-sm text-slate-500">
+              Pilih platform WISE untuk melihat detail lintas tahap.
+            </div>
+          )}
+        </div>
       </div>
     </TablePageLayout>
   );

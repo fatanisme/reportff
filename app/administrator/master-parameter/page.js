@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import TablePageLayout from "@/app/components/ui/TablePageLayout";
 import Button from "@/app/components/ui/Button";
+import LoadingOverlay from "@/app/components/ui/LoadingOverlay";
 import { useNotification } from "@/app/components/ui/NotificationProvider";
 
 const defaultFormState = {
@@ -47,6 +48,11 @@ const MasterParameterPage = () => {
     warning: notifyWarning,
     confirm: confirmDialog,
   } = useNotification();
+
+  const tableBusy = useMemo(
+    () => Boolean(loading || isSubmitting),
+    [loading, isSubmitting]
+  );
 
   const fetchParameters = useCallback(
     async (signal) => {
@@ -423,7 +429,8 @@ const MasterParameterPage = () => {
           </div>
         }
       >
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <LoadingOverlay show={tableBusy} />
           <div className="flex items-center justify-between pb-3">
             <p className="text-sm text-slate-600">
               {loading
@@ -432,9 +439,16 @@ const MasterParameterPage = () => {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full table-auto border border-slate-200 text-sm">
-              <thead className="bg-slate-100 text-slate-700">
+          <div
+            className={
+              tableBusy
+                ? "pointer-events-none select-none opacity-60 transition"
+                : "transition"
+            }
+          >
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto border border-slate-200 text-sm">
+                <thead className="bg-slate-100 text-slate-700">
                 <tr>
                   {columns.map((column) => (
                     <th
@@ -496,36 +510,36 @@ const MasterParameterPage = () => {
                     </td>
                   </tr>
                 )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-4 flex flex-col items-center justify-between gap-3 text-sm text-slate-600 md:flex-row">
-            <span>
-              Menampilkan {paginatedParameters.length} parameter dari {parameters.length}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="rounded border border-slate-300 px-3 py-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={safePage <= 1}
-              >
-                Prev
-              </button>
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex flex-col items-center justify-between gap-3 text-sm text-slate-600 md:flex-row">
               <span>
-                Halaman {safePage} dari {totalPages}
+                Menampilkan {paginatedParameters.length} parameter dari {parameters.length}
               </span>
-              <button
-                type="button"
-                className="rounded border border-slate-300 px-3 py-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={safePage >= totalPages}
-              >
-                Next
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded border border-slate-300 px-3 py-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={safePage <= 1}
+                >
+                  Prev
+                </button>
+                <span>
+                  Halaman {safePage} dari {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="rounded border border-slate-300 px-3 py-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={safePage >= totalPages}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>
