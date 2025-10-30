@@ -106,13 +106,13 @@ export async function GET(request) {
     const historyQuery = `
       SELECT
         TO_CHAR(o.CREATE_DATE, 'YYYY-MM-DD HH24:MI:SS') AS CREATE_DATE,
-        o.NO_APLIKASI,
+        o.NOAPLIKASI,
         o.BRANCH_CODE,
         o.FLOW_CODE,
         o.CREATE_BY,
         o.USER_ID
       FROM ILOS.TBL_ONE_UP_LEVEL o
-      WHERE o.NO_APLIKASI = :no_apl
+      WHERE o.NOAPLIKASI = :no_apl
       ORDER BY o.CREATE_DATE DESC
     `;
 
@@ -298,7 +298,7 @@ export async function POST(request) {
       }
 
       await executeQuery(
-        `DELETE FROM ILOS.TBL_ONE_UP_LEVEL WHERE NO_APLIKASI = :no_apl`,
+        `DELETE FROM ILOS.TBL_ONE_UP_LEVEL WHERE NOAPLIKASI = :no_apl`,
         { no_apl: noAplikasi },
         { connectionName: CONNECTION_NAME }
       );
